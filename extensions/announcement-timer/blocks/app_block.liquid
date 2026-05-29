@@ -1,0 +1,229 @@
+{% liquid
+  assign block_id = 'flashbar-' | append: block.id
+  assign proxy_url = block.settings.proxy_url | default: '/apps/flashbar/settings'
+%}
+
+<div
+  id="{{ block_id }}"
+  class="flashbar"
+  data-proxy-url="{{ proxy_url }}"
+  data-shop="{{ shop.permanent_domain }}"
+  data-text="{{ block.settings.text | escape }}"
+  data-target-date="{{ block.settings.target_date | escape }}"
+  data-evergreen="{{ block.settings.is_evergreen }}"
+  data-minutes="{{ block.settings.minutes_duration }}"
+  data-background="{{ block.settings.background_color }}"
+  data-color="{{ block.settings.text_color }}"
+  data-button-text="{{ block.settings.button_text | escape }}"
+  data-button-url="{{ block.settings.button_url }}"
+  data-enabled="{{ block.settings.is_enabled }}"
+  hidden
+>
+  <div class="flashbar__inner">
+    <span class="flashbar__text"></span>
+    <span class="flashbar__timer" aria-live="polite">
+      <span data-unit="days">00</span>
+      <span>:</span>
+      <span data-unit="hours">00</span>
+      <span>:</span>
+      <span data-unit="minutes">00</span>
+      <span>:</span>
+      <span data-unit="seconds">00</span>
+    </span>
+    <a class="flashbar__button"></a>
+  </div>
+</div>
+
+<style>
+  #{{ block_id }} {
+    background: #000;
+    color: #fff;
+    font: inherit;
+    width: 100%;
+  }
+
+  #{{ block_id }}[hidden] {
+    display: none;
+  }
+
+  #{{ block_id }} .flashbar__inner {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    min-height: 48px;
+    padding: 10px 16px;
+    text-align: center;
+  }
+
+  #{{ block_id }} .flashbar__text {
+    font-weight: 700;
+  }
+
+  #{{ block_id }} .flashbar__timer {
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    display: inline-flex;
+    font-variant-numeric: tabular-nums;
+    gap: 4px;
+    padding: 5px 9px;
+  }
+
+  #{{ block_id }} .flashbar__button {
+    background: currentColor;
+    border-radius: 6px;
+    padding: 7px 12px;
+    text-decoration: none;
+  }
+</style>
+
+<script>
+  (() => {
+    const root = document.getElementById({{ block_id | json }});
+    if (!root || root.dataset.booted) return;
+    root.dataset.booted = "true";
+
+    const fallback = {
+      text: root.dataset.text || "Flash Sale!",
+      targetDate: root.dataset.targetDate || new Date(Date.now() + 6048e5).toISOString(),
+      isEvergreen: root.dataset.evergreen === "true",
+      minutesDuration: Number(root.dataset.minutes || 15),
+      backgroundColor: root.dataset.background || "#000000",
+      textColor: root.dataset.color || "#ffffff",
+      buttonText: root.dataset.buttonText || "Shop now",
+      buttonUrl: root.dataset.buttonUrl || "",
+      isEnabled: root.dataset.enabled !== "false"
+    };
+
+    const timerNodes = {
+      days: root.querySelector('[data-unit="days"]'),
+      hours: root.querySelector('[data-unit="hours"]'),
+      minutes: root.querySelector('[data-unit="minutes"]'),
+      seconds: root.querySelector('[data-unit="seconds"]')
+    };
+
+    const cookieName = "flashbar_end_" + btoa(location.hostname).replaceAll("=", "");
+    const pad = (value) => String(Math.max(0, value)).padStart(2, "0");
+    const readCookie = (name) => document.cookie.split("; ").find((row) => row.startsWith(name + "="))?.split("=")[1];
+    const writeCookie = (name, value, maxAge) => {
+      document.cookie = name + "=" + value + "; path=/; max-age=" + maxAge + "; samesite=lax";
+    };
+
+    const apply = (settings) => {
+      if (!settings.isEnabled) {
+        root.hidden = true;
+        return;
+      }
+
+      root.style.background = settings.backgroundColor;
+      root.style.color = settings.textColor;
+      root.querySelector(".flashbar__text").textContent = settings.text;
+
+      const button = root.querySelector(".flashbar__button");
+      button.textContent = settings.buttonText || "";
+      button.href = settings.buttonUrl || "#";
+      button.hidden = !settings.buttonText;
+      button.style.color = settings.backgroundColor;
+
+      let end = Date.parse(settings.targetDate);
+      if (settings.isEvergreen) {
+        const saved = Number(readCookie(cookieName));
+        const duration = Math.max(1, Number(settings.minutesDuration || 15)) * 60000;
+        end = saved && saved > Date.now() ? saved : Date.now() + duration;
+        writeCookie(cookieName, String(end), Math.ceil(duration / 1000));
+      }
+
+      const tick = () => {
+        const total = Math.max(0, Math.floor((end - Date.now()) / 1000));
+        timerNodes.days.textContent = pad(Math.floor(total / 86400));
+        timerNodes.hours.textContent = pad(Math.floor((total % 86400) / 3600));
+        timerNodes.minutes.textContent = pad(Math.floor((total % 3600) / 60));
+        timerNodes.seconds.textContent = pad(total % 60);
+      };
+
+      tick();
+      root.hidden = false;
+      setInterval(tick, 1000);
+    };
+
+    const url = new URL(root.dataset.proxyUrl, location.origin);
+    url.searchParams.set("shop", root.dataset.shop);
+
+    fetch(url, { credentials: "same-origin" })
+      .then((response) => response.ok ? response.json() : fallback)
+      .then((settings) => apply({ ...fallback, ...settings }))
+      .catch(() => apply(fallback));
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "FlashBar timer",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "proxy_url",
+      "label": "App proxy URL",
+      "default": "/apps/flashbar/settings"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Text",
+      "default": "Flash Sale!"
+    },
+    {
+      "type": "text",
+      "id": "target_date",
+      "label": "Target date ISO",
+      "default": "2030-01-01T00:00:00.000Z"
+    },
+    {
+      "type": "checkbox",
+      "id": "is_evergreen",
+      "label": "Use evergreen timer",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "minutes_duration",
+      "label": "Evergreen minutes",
+      "min": 1,
+      "max": 240,
+      "step": 1,
+      "default": 15
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button text",
+      "default": "Shop now"
+    },
+    {
+      "type": "url",
+      "id": "button_url",
+      "label": "Button URL"
+    },
+    {
+      "type": "checkbox",
+      "id": "is_enabled",
+      "label": "Enabled",
+      "default": true
+    }
+  ]
+}
+{% endschema %}
