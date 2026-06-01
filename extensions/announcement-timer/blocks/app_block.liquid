@@ -1,12 +1,14 @@
 {% liquid
   assign block_id = 'flashbar-' | append: block.id
   assign proxy_url = block.settings.proxy_url | default: '/apps/flashbar/settings'
+  assign track_url = block.settings.track_url | default: '/apps/flashbar/track'
 %}
 
 <div
   id="{{ block_id }}"
   class="flashbar"
   data-proxy-url="{{ proxy_url }}"
+  data-track-url="{{ track_url }}"
   data-shop="{{ shop.permanent_domain }}"
   data-text="{{ block.settings.text | escape }}"
   data-target-date="{{ block.settings.target_date | escape }}"
@@ -110,6 +112,28 @@
       document.cookie = name + "=" + value + "; path=/; max-age=" + maxAge + "; samesite=lax";
     };
 
+    const source = () => {
+      const params = new URLSearchParams(location.search);
+      return params.get("utm_source") || document.referrer && new URL(document.referrer).hostname || "direct";
+    };
+
+    const track = (settings, type) => {
+      const url = new URL(root.dataset.trackUrl, location.origin);
+      url.searchParams.set("shop", root.dataset.shop);
+      fetch(url, {
+        body: JSON.stringify({
+          ctaId: settings.id || null,
+          path: location.pathname,
+          source: source(),
+          type
+        }),
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        method: "POST",
+        keepalive: true
+      }).catch(() => {});
+    };
+
     const apply = (settings) => {
       if (!settings.isEnabled) {
         root.hidden = true;
@@ -125,6 +149,7 @@
       button.href = settings.buttonUrl || "#";
       button.hidden = !settings.buttonText;
       button.style.color = settings.backgroundColor;
+      button.onclick = () => track(settings, "click");
 
       let end = Date.parse(settings.targetDate);
       if (settings.isEvergreen) {
@@ -144,6 +169,7 @@
 
       tick();
       root.hidden = false;
+      track(settings, "impression");
       setInterval(tick, 1000);
     };
 
@@ -152,7 +178,11 @@
 
     fetch(url, { credentials: "same-origin" })
       .then((response) => response.ok ? response.json() : fallback)
-      .then((settings) => apply({ ...fallback, ...settings }))
+      .then((settings) => {
+        const ctas = Array.isArray(settings.ctas) ? settings.ctas : [];
+        const chosen = ctas.length ? ctas[Math.floor(Math.random() * ctas.length)] : settings;
+        apply({ ...fallback, ...chosen });
+      })
       .catch(() => apply(fallback));
   })();
 </script>
@@ -167,6 +197,12 @@
       "id": "proxy_url",
       "label": "App proxy URL",
       "default": "/apps/flashbar/settings"
+    },
+    {
+      "type": "text",
+      "id": "track_url",
+      "label": "Tracking URL",
+      "default": "/apps/flashbar/track"
     },
     {
       "type": "text",

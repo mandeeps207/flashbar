@@ -13,11 +13,13 @@
       "routes/webhooks.app.scopes_update": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/webhooks.app.uninstalled": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/apps.flashbar.settings": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/apps.flashbar.track": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth.login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth.$": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/app.additional": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
-      "routes/app._index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
+      "routes/app._index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/app.ctas": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
     },
     "routes": {
       "root": {
@@ -49,6 +51,15 @@
         "parentId": "root",
         "file": "app/routes/apps.flashbar.settings.tsx",
         "path": "apps/flashbar/settings",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/apps.flashbar.track": {
+        "id": "routes/apps.flashbar.track",
+        "parentId": "root",
+        "file": "app/routes/apps.flashbar.track.tsx",
+        "path": "apps/flashbar/track",
         "config": {
           "runtime": "nodejs"
         }
@@ -104,6 +115,15 @@
         "config": {
           "runtime": "nodejs"
         }
+      },
+      "routes/app.ctas": {
+        "id": "routes/app.ctas",
+        "parentId": "routes/app",
+        "file": "app/routes/app.ctas.tsx",
+        "path": "ctas",
+        "config": {
+          "runtime": "nodejs"
+        }
       }
     }
   },
@@ -144,6 +164,12 @@
         "file": "routes/apps.flashbar.settings.tsx",
         "path": "apps/flashbar/settings"
       },
+      "routes/apps.flashbar.track": {
+        "id": "routes/apps.flashbar.track",
+        "parentId": "root",
+        "file": "routes/apps.flashbar.track.tsx",
+        "path": "apps/flashbar/track"
+      },
       "routes/auth.login": {
         "id": "routes/auth.login",
         "parentId": "root",
@@ -179,6 +205,12 @@
         "parentId": "routes/app",
         "file": "routes/app._index.tsx",
         "index": true
+      },
+      "routes/app.ctas": {
+        "id": "routes/app.ctas",
+        "parentId": "routes/app",
+        "file": "routes/app.ctas.tsx",
+        "path": "ctas"
       }
     },
     "routeDiscovery": {
@@ -212,6 +244,11 @@
             "path": "apps/flashbar/settings"
           },
           {
+            "id": "routes/apps.flashbar.track",
+            "file": "routes/apps.flashbar.track.tsx",
+            "path": "apps/flashbar/track"
+          },
+          {
             "id": "routes/auth.login",
             "file": "routes/auth.login/route.tsx",
             "path": "auth/login"
@@ -240,6 +277,11 @@
                 "id": "routes/app._index",
                 "file": "routes/app._index.tsx",
                 "index": true
+              },
+              {
+                "id": "routes/app.ctas",
+                "file": "routes/app.ctas.tsx",
+                "path": "ctas"
               }
             ]
           }

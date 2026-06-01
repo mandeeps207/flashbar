@@ -21,9 +21,10 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>A short heading about [your app]</h1>
+        <h1 className={styles.heading}>FlashBar announcement CTAs</h1>
         <p className={styles.text}>
-          A tagline about [your app] that describes your value proposition.
+          Build timed announcement bars, track clicks, and learn what gets
+          shoppers to act.
         </p>
         {showForm && (
           <Form className={styles.form} method="post" action="/auth/login">
@@ -39,16 +40,16 @@ export default function App() {
         )}
         <ul className={styles.list}>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Multiple CTAs</strong>. Run sale, shipping, and launch bars
+            from one Shopify app.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Countdown urgency</strong>. Use fixed campaign deadlines or
+            evergreen visitor sessions.
           </li>
           <li>
-            <strong>Product feature</strong>. Some detail about your feature and
-            its benefit to your customer.
+            <strong>Performance analytics</strong>. See impressions, clicks,
+            CTR, devices, and sources.
           </li>
         </ul>
       </div>

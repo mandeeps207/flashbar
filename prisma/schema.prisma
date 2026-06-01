@@ -51,3 +51,40 @@ model BannerSetting {
 
   @@index([shop])
 }
+
+model AnnouncementCta {
+  id              String     @id @default(cuid())
+  shop            String
+  name            String     @default("Main announcement")
+  text            String     @default("Flash Sale!")
+  targetDate      DateTime
+  isEvergreen     Boolean    @default(false)
+  minutesDuration Int        @default(15)
+  backgroundColor String     @default("#000000")
+  textColor       String     @default("#ffffff")
+  buttonText      String     @default("Shop now")
+  buttonUrl       String     @default("")
+  isEnabled       Boolean    @default(true)
+  priority        Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  events          CtaEvent[]
+
+  @@index([shop])
+  @@index([shop, isEnabled, priority])
+}
+
+model CtaEvent {
+  id        String          @id @default(cuid())
+  shop      String
+  ctaId     String?
+  type      String
+  device    String          @default("unknown")
+  source    String          @default("direct")
+  path      String          @default("")
+  createdAt DateTime        @default(now())
+  cta       AnnouncementCta? @relation(fields: [ctaId], references: [id], onDelete: SetNull)
+
+  @@index([shop, type, createdAt])
+  @@index([ctaId, type, createdAt])
+}

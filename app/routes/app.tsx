@@ -23,7 +23,7 @@ export default function App() {
       <PolarisAppProvider i18n={enTranslations}>
         <s-app-nav>
           <s-link href="/app">Dashboard</s-link>
-          <s-link href="/app/additional">Additional page</s-link>
+          <s-link href="/app/ctas">CTA library</s-link>
         </s-app-nav>
         <Outlet />
       </PolarisAppProvider>
