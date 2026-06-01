@@ -30,38 +30,79 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           targetDate: fallback?.targetDate.toISOString() ?? defaultTargetDate(),
           isEvergreen: fallback?.isEvergreen ?? false,
           minutesDuration: fallback?.minutesDuration ?? 15,
+          headingHtml: fallback?.text ?? "Flash Sale!",
+          displayType: "inline",
+          placement: "theme_block",
+          isSticky: false,
+          stickyPosition: "top",
           backgroundColor: fallback?.backgroundColor ?? "#000000",
           textColor: fallback?.textColor ?? "#ffffff",
+          timerBackground: "#111111",
+          timerTextColor: "#ffffff",
+          digitColor: "#ffffff",
+          labelColor: "#d1d5db",
+          buttonBackground: "#ffffff",
+          buttonTextColor: "#000000",
           buttonText: fallback?.buttonText ?? "Shop now",
           buttonUrl: fallback?.buttonUrl ?? "",
+          borderRadius: 6,
           isEnabled: fallback?.isEnabled ?? true,
           ctas: [],
         },
+    {
+      headers: {
+        "Cache-Control": "private, max-age=30, stale-while-revalidate=30",
+      },
+    },
   );
 };
 
 function serializeCta(cta: {
   id: string;
   text: string;
+  headingHtml: string;
   targetDate: Date;
   isEvergreen: boolean;
   minutesDuration: number;
+  displayType: string;
+  placement: string;
+  isSticky: boolean;
+  stickyPosition: string;
   backgroundColor: string;
   textColor: string;
+  timerBackground: string;
+  timerTextColor: string;
+  digitColor: string;
+  labelColor: string;
+  buttonBackground: string;
+  buttonTextColor: string;
   buttonText: string;
   buttonUrl: string;
+  borderRadius: number;
   isEnabled: boolean;
 }) {
   return {
     id: cta.id,
     text: cta.text,
+    headingHtml: cta.headingHtml,
     targetDate: cta.targetDate.toISOString(),
     isEvergreen: cta.isEvergreen,
     minutesDuration: cta.minutesDuration,
+    displayType: cta.displayType,
+    placement: cta.placement,
+    isSticky: cta.isSticky,
+    stickyPosition: cta.stickyPosition,
     backgroundColor: cta.backgroundColor,
     textColor: cta.textColor,
+    timerBackground: cta.timerBackground,
+    timerTextColor: cta.timerTextColor,
+    digitColor: cta.digitColor,
+    labelColor: cta.labelColor,
+    buttonBackground: cta.buttonBackground,
+    buttonTextColor: cta.buttonTextColor,
     buttonText: cta.buttonText,
     buttonUrl: cta.buttonUrl,
+    borderRadius: cta.borderRadius,
     isEnabled: cta.isEnabled,
   };
 }

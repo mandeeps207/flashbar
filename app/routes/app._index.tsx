@@ -91,24 +91,24 @@ export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const { search } = useLocation();
-  const goToCtas = () => navigate(`/app/ctas${search}`);
-  const goToNewCta = () => navigate(`/app/ctas/new${search}`);
+  const goToCampaigns = () => navigate(`/app/ctas${search}`);
+  const goToNewCampaign = () => navigate(`/app/ctas/new${search}`);
 
   return (
     <Page
       title="FlashBar dashboard"
-      subtitle="Track how announcement CTAs perform across storefront visitors."
-      primaryAction={{ content: "Create CTA", onAction: goToNewCta }}
+      subtitle="Track how countdown timer campaigns perform across storefront visitors."
+      primaryAction={{ content: "Create campaign", onAction: goToNewCampaign }}
     >
       {!data.hasCtas ? (
         <Card>
           <EmptyState
-            heading="Create your first announcement CTA"
-            action={{ content: "Create CTA", onAction: goToNewCta }}
+            heading="Create your first timer campaign"
+            action={{ content: "Create campaign", onAction: goToNewCampaign }}
             image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
           >
             <p>
-              Add a promo bar, countdown, and button before tracking impressions,
+              Add a countdown timer, heading, and button before tracking impressions,
               clicks, CTR, devices, and traffic sources.
             </p>
           </EmptyState>
@@ -120,7 +120,7 @@ export default function Dashboard() {
             <MetricCard label="Clicks" value={formatNumber(data.clicks)} />
             <MetricCard label="CTR" value={`${data.ctr.toFixed(2)}%`} />
             <MetricCard
-              label="Active CTAs"
+              label="Active campaigns"
               value={`${data.activeCtas}/${data.totalCtas}`}
             />
           </InlineGrid>
@@ -132,7 +132,7 @@ export default function Dashboard() {
 
           <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
             <BreakdownCard title="Traffic source" rows={data.sourceRows} />
-            <TopCtas onManage={goToCtas} rows={data.topCtas} />
+            <TopCtas onManage={goToCampaigns} rows={data.topCtas} />
           </InlineGrid>
         </BlockStack>
       )}
@@ -277,7 +277,7 @@ function TopCtas({
       <BlockStack gap="400">
         <InlineStack align="space-between">
           <Text as="h2" variant="headingMd">
-            Top CTAs
+            Top campaigns
           </Text>
           <Button onClick={onManage} variant="plain">
             Manage
@@ -285,7 +285,7 @@ function TopCtas({
         </InlineStack>
         {rows.length === 0 ? (
           <Text as="p" tone="subdued">
-            CTA performance will appear after storefront traffic starts.
+            Campaign performance will appear after storefront traffic starts.
           </Text>
         ) : (
           rows.map((row) => (

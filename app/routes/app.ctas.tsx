@@ -4,12 +4,14 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import {
-  Form,
+  Link as RouterLink,
   useActionData,
+  useFetcher,
   useLoaderData,
   useLocation,
   useNavigate,
 } from "react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   Badge,
   Banner,
@@ -18,6 +20,7 @@ import {
   Card,
   EmptyState,
   InlineStack,
+  Modal,
   Page,
   Text,
 } from "@shopify/polaris";
@@ -94,47 +97,78 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Ctas() {
   const { ctas } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const deleteFetcher = useFetcher<typeof action>();
   const location = useLocation();
   const navigate = useNavigate();
+  const [campaignToDelete, setCampaignToDelete] = useState<null | {
+    id: string;
+    name: string;
+  }>(null);
   const search = location.search;
   const goTo = (path: string) => navigate(`${path}${search}`);
+  const isDeleting = deleteFetcher.state !== "idle";
+  const deletedId = useMemo(() => {
+    const formData = deleteFetcher.formData;
+    const id = formData?.get("id");
+    return typeof id === "string" ? id : "";
+  }, [deleteFetcher.formData]);
+  const visibleCampaigns = ctas.filter((cta) => cta.id !== deletedId);
+
+  useEffect(() => {
+    if (deleteFetcher.state === "idle" && deleteFetcher.data?.ok) {
+      setCampaignToDelete(null);
+    }
+  }, [deleteFetcher.data, deleteFetcher.state]);
 
   return (
     <Page
-      title="CTA library"
-      subtitle="Review all announcement CTAs, performance, status, and storefront priority."
+      fullWidth
+      title="Timer campaigns"
+      subtitle="Manage countdown campaigns, placement, performance, and storefront priority."
       backAction={{ content: "Dashboard", onAction: () => goTo("/app") }}
-      primaryAction={{ content: "Create CTA", onAction: () => goTo("/app/ctas/new") }}
+      primaryAction={{
+        content: "Create campaign",
+        onAction: () => goTo("/app/ctas/new"),
+      }}
     >
       <BlockStack gap="400">
         {actionData?.ok && <Banner tone="success">{actionData.message}</Banner>}
         {actionData && !actionData.ok && (
           <Banner tone="critical">{actionData.error}</Banner>
         )}
+        {deleteFetcher.data && !deleteFetcher.data.ok && (
+          <Banner tone="critical">{deleteFetcher.data.error}</Banner>
+        )}
 
         {ctas.length === 0 ? (
           <Card>
             <EmptyState
-              heading="No CTAs yet"
-              action={{ content: "Create CTA", onAction: () => goTo("/app/ctas/new") }}
+              heading="No timer campaigns yet"
+              action={{
+                content: "Create campaign",
+                onAction: () => goTo("/app/ctas/new"),
+              }}
               image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
             >
-              <p>Create your first announcement CTA and start tracking it.</p>
+              <p>
+                Create a countdown timer campaign for sale bars, product page
+                urgency, or sticky top and bottom announcements.
+              </p>
             </EmptyState>
           </Card>
         ) : (
           <Card padding="0">
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ width: "100%" }}>
               <table
                 style={{
                   borderCollapse: "collapse",
-                  minWidth: 980,
+                  tableLayout: "fixed",
                   width: "100%",
                 }}
               >
                 <thead>
                   <tr style={{ borderBottom: "1px solid #dfe3e8" }}>
-                    <Th>CTA</Th>
+                    <Th width="30%">Campaign</Th>
                     <Th>Status</Th>
                     <Th>Mode</Th>
                     <Th>Priority</Th>
@@ -146,7 +180,7 @@ export default function Ctas() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ctas.map((cta) => (
+                  {visibleCampaigns.map((cta) => (
                     <tr key={cta.id} style={{ borderBottom: "1px solid #edf0f3" }}>
                       <Td>
                         <BlockStack gap="100">
@@ -174,18 +208,22 @@ export default function Ctas() {
                       <Td>{cta.updatedAt}</Td>
                       <Td align="right">
                         <InlineStack align="end" gap="300" wrap={false}>
-                          <Button
-                            onClick={() => goTo(`/app/ctas/${cta.id}`)}
-                            variant="plain"
+                          <RouterLink
+                            style={{ color: "#005bd3", textDecoration: "none" }}
+                            to={`/app/ctas/${cta.id}${search}`}
                           >
                             Edit
+                          </RouterLink>
+                          <Button
+                            disabled={isDeleting}
+                            onClick={() =>
+                              setCampaignToDelete({ id: cta.id, name: cta.name })
+                            }
+                            tone="critical"
+                            variant="plain"
+                          >
+                            Delete
                           </Button>
-                          <Form method="post">
-                            <input name="id" type="hidden" value={cta.id} />
-                            <Button submit tone="critical" variant="plain">
-                              Delete
-                            </Button>
-                          </Form>
                         </InlineStack>
                       </Td>
                     </tr>
@@ -196,6 +234,37 @@ export default function Ctas() {
           </Card>
         )}
       </BlockStack>
+      <Modal
+        open={Boolean(campaignToDelete)}
+        onClose={() => setCampaignToDelete(null)}
+        title="Delete timer campaign?"
+        primaryAction={{
+          content: "Delete campaign",
+          destructive: true,
+          loading: isDeleting,
+          onAction: () => {
+            if (!campaignToDelete) return;
+            deleteFetcher.submit(
+              { id: campaignToDelete.id },
+              { method: "post" },
+            );
+          },
+        }}
+        secondaryActions={[
+          {
+            content: "Cancel",
+            disabled: isDeleting,
+            onAction: () => setCampaignToDelete(null),
+          },
+        ]}
+      >
+        <Modal.Section>
+          <Text as="p">
+            This permanently removes {campaignToDelete?.name || "this campaign"}
+            . Historical analytics events stay available for dashboard totals.
+          </Text>
+        </Modal.Section>
+      </Modal>
     </Page>
   );
 }
@@ -203,9 +272,11 @@ export default function Ctas() {
 function Th({
   align = "left",
   children,
+  width,
 }: {
   align?: "left" | "right";
   children: React.ReactNode;
+  width?: string;
 }) {
   return (
     <th
@@ -217,6 +288,7 @@ function Th({
         textAlign: align,
         textTransform: "uppercase",
         whiteSpace: "nowrap",
+        width,
       }}
     >
       {children}
@@ -237,6 +309,7 @@ function Td({
         padding: "14px 16px",
         textAlign: align,
         verticalAlign: "middle",
+        wordBreak: "break-word",
       }}
     >
       {children}

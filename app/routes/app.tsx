@@ -25,7 +25,7 @@ export default function App() {
       <PolarisAppProvider i18n={enTranslations}>
         <s-app-nav>
           <s-link href={`/app${search}`}>Dashboard</s-link>
-          <s-link href={`/app/ctas${search}`}>CTA library</s-link>
+          <s-link href={`/app/ctas${search}`}>Timer campaigns</s-link>
         </s-app-nav>
         <Outlet />
       </PolarisAppProvider>

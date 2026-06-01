@@ -36,27 +36,51 @@ import { authenticate } from "../shopify.server";
 type CtaForm = {
   name: string;
   text: string;
+  headingHtml: string;
   targetDate: string;
   isEvergreen: boolean;
   minutesDuration: string;
+  displayType: string;
+  placement: string;
+  isSticky: boolean;
+  stickyPosition: string;
   backgroundColor: string;
   textColor: string;
+  timerBackground: string;
+  timerTextColor: string;
+  digitColor: string;
+  labelColor: string;
+  buttonBackground: string;
+  buttonTextColor: string;
   buttonText: string;
   buttonUrl: string;
+  borderRadius: string;
   priority: string;
   isEnabled: boolean;
 };
 
 const blankCta: CtaForm = {
-  name: "Weekend sale",
+  name: "Weekend sale timer",
   text: "Flash Sale!",
+  headingHtml: "Flash Sale!",
   targetDate: toDateTimeLocal(defaultTargetDate()),
   isEvergreen: false,
   minutesDuration: "15",
+  displayType: "inline",
+  placement: "theme_block",
+  isSticky: false,
+  stickyPosition: "top",
   backgroundColor: "#000000",
   textColor: "#ffffff",
+  timerBackground: "#111111",
+  timerTextColor: "#ffffff",
+  digitColor: "#ffffff",
+  labelColor: "#d1d5db",
+  buttonBackground: "#ffffff",
+  buttonTextColor: "#000000",
   buttonText: "Shop now",
   buttonUrl: "/collections/all",
+  borderRadius: "6",
   priority: "0",
   isEnabled: true,
 };
@@ -81,13 +105,25 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     cta: {
       name: cta.name,
       text: cta.text,
+      headingHtml: cta.headingHtml,
       targetDate: toDateTimeLocal(cta.targetDate),
       isEvergreen: cta.isEvergreen,
       minutesDuration: String(cta.minutesDuration),
+      displayType: cta.displayType,
+      placement: cta.placement,
+      isSticky: cta.isSticky,
+      stickyPosition: cta.stickyPosition,
       backgroundColor: cta.backgroundColor,
       textColor: cta.textColor,
+      timerBackground: cta.timerBackground,
+      timerTextColor: cta.timerTextColor,
+      digitColor: cta.digitColor,
+      labelColor: cta.labelColor,
+      buttonBackground: cta.buttonBackground,
+      buttonTextColor: cta.buttonTextColor,
       buttonText: cta.buttonText,
       buttonUrl: cta.buttonUrl,
+      borderRadius: String(cta.borderRadius),
       priority: String(cta.priority),
       isEnabled: cta.isEnabled,
     },
@@ -139,12 +175,14 @@ export default function CtaDetails() {
 
   return (
     <Page
-      title={isNew ? "Create CTA" : "Edit CTA"}
-      subtitle={isNew ? "Add a new announcement bar." : `Editing ${params.id}`}
-      backAction={{ content: "CTA library", onAction: () => navigate(`/app/ctas${search}`) }}
+      fullWidth
+      title={isNew ? "Create timer campaign" : "Edit timer campaign"}
+      subtitle={isNew ? "Build a countdown timer campaign." : `Editing ${params.id}`}
+      backAction={{ content: "Timer campaigns", onAction: () => navigate(`/app/ctas${search}`) }}
     >
       <Form method="post">
         <input name="isEnabled" type="hidden" value={form.isEnabled ? "on" : "off"} />
+        <input name="isSticky" type="hidden" value={form.isSticky ? "on" : "off"} />
         <BlockStack gap="500">
           {actionData && !actionData.ok && (
             <Banner tone="critical">{actionData.error}</Banner>
@@ -153,10 +191,13 @@ export default function CtaDetails() {
             <Layout.Section>
               <Card>
                 <FormLayout>
+                  <Text as="h2" variant="headingMd">
+                    Campaign setup
+                  </Text>
                   <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
                     <TextField
                       autoComplete="off"
-                      label="Internal name"
+                      label="Campaign name"
                       name="name"
                       onChange={handleChange("name")}
                       value={form.name}
@@ -172,10 +213,19 @@ export default function CtaDetails() {
                   </InlineGrid>
                   <TextField
                     autoComplete="off"
-                    label="Announcement text"
+                    label="Plain fallback text"
                     name="text"
                     onChange={handleChange("text")}
                     value={form.text}
+                  />
+                  <TextField
+                    autoComplete="off"
+                    helpText="Supports simple HTML such as strong, em, br, and span. It is sanitized before saving."
+                    label="Heading HTML"
+                    multiline={3}
+                    name="headingHtml"
+                    onChange={handleChange("headingHtml")}
+                    value={form.headingHtml}
                   />
                   <Select
                     label="Countdown mode"
@@ -207,6 +257,46 @@ export default function CtaDetails() {
                       suffix="minutes"
                       type="number"
                       value={form.minutesDuration}
+                    />
+                  </InlineGrid>
+                  <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+                    <Select
+                      label="Display type"
+                      name="displayType"
+                      onChange={handleChange("displayType")}
+                      options={[
+                        { label: "Inline", value: "inline" },
+                        { label: "Stacked block", value: "block" },
+                      ]}
+                      value={form.displayType}
+                    />
+                    <Select
+                      label="Placement"
+                      name="placement"
+                      onChange={handleChange("placement")}
+                      options={[
+                        { label: "Theme block placement", value: "theme_block" },
+                        { label: "Product page timer", value: "product_page" },
+                        { label: "Full page announcement", value: "full_page" },
+                      ]}
+                      value={form.placement}
+                    />
+                  </InlineGrid>
+                  <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+                    <Checkbox
+                      checked={form.isSticky}
+                      label="Make timer sticky"
+                      onChange={handleChange("isSticky")}
+                    />
+                    <Select
+                      label="Sticky position"
+                      name="stickyPosition"
+                      onChange={handleChange("stickyPosition")}
+                      options={[
+                        { label: "Top", value: "top" },
+                        { label: "Bottom", value: "bottom" },
+                      ]}
+                      value={form.stickyPosition}
                     />
                   </InlineGrid>
                   <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
@@ -249,6 +339,7 @@ export default function CtaDetails() {
                   />
                 </FormLayout>
               </Card>
+              <StylingCard form={form} onChange={handleChange} />
             </Layout.Section>
             <Layout.Section variant="oneThird">
               <Card>
@@ -264,12 +355,121 @@ export default function CtaDetails() {
           <InlineStack align="end" gap="300">
             <Button onClick={() => navigate(`/app/ctas${search}`)}>Cancel</Button>
             <Button loading={isSaving} submit variant="primary">
-              {isNew ? "Create CTA" : "Save CTA"}
+              {isNew ? "Create campaign" : "Save campaign"}
             </Button>
           </InlineStack>
         </BlockStack>
       </Form>
     </Page>
+  );
+}
+
+function StylingCard({
+  form,
+  onChange,
+}: {
+  form: CtaForm;
+  onChange: (field: keyof CtaForm) => (value: string | boolean) => void;
+}) {
+  const sections = [
+    "Timer block",
+    "Heading",
+    "Digits",
+    "Labels",
+    "CTA button",
+  ];
+
+  return (
+    <Card>
+      <InlineGrid columns={{ xs: 1, md: "180px 1fr" }} gap="500">
+        <BlockStack gap="200">
+          {sections.map((section) => (
+            <Button key={section} fullWidth textAlign="left" variant="tertiary">
+              {section}
+            </Button>
+          ))}
+        </BlockStack>
+        <FormLayout>
+          <Text as="h2" variant="headingMd">
+            Styling
+          </Text>
+          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+            <TextField
+              autoComplete="off"
+              label="Timer block background"
+              name="timerBackground"
+              onChange={onChange("timerBackground")}
+              value={form.timerBackground}
+            />
+            <TextField
+              autoComplete="off"
+              label="Timer block text"
+              name="timerTextColor"
+              onChange={onChange("timerTextColor")}
+              value={form.timerTextColor}
+            />
+          </InlineGrid>
+          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+            <TextField
+              autoComplete="off"
+              label="Heading color"
+              name="textColor"
+              onChange={onChange("textColor")}
+              value={form.textColor}
+            />
+            <TextField
+              autoComplete="off"
+              label="Campaign background"
+              name="backgroundColor"
+              onChange={onChange("backgroundColor")}
+              value={form.backgroundColor}
+            />
+          </InlineGrid>
+          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+            <TextField
+              autoComplete="off"
+              label="Digit color"
+              name="digitColor"
+              onChange={onChange("digitColor")}
+              value={form.digitColor}
+            />
+            <TextField
+              autoComplete="off"
+              label="Label color"
+              name="labelColor"
+              onChange={onChange("labelColor")}
+              value={form.labelColor}
+            />
+          </InlineGrid>
+          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+            <TextField
+              autoComplete="off"
+              label="Button background"
+              name="buttonBackground"
+              onChange={onChange("buttonBackground")}
+              value={form.buttonBackground}
+            />
+            <TextField
+              autoComplete="off"
+              label="Button text"
+              name="buttonTextColor"
+              onChange={onChange("buttonTextColor")}
+              value={form.buttonTextColor}
+            />
+          </InlineGrid>
+          <TextField
+            autoComplete="off"
+            label="Corner radius"
+            min={0}
+            name="borderRadius"
+            onChange={onChange("borderRadius")}
+            suffix="px"
+            type="number"
+            value={form.borderRadius}
+          />
+        </FormLayout>
+      </InlineGrid>
+    </Card>
   );
 }
 
@@ -279,10 +479,11 @@ function Preview({ cta }: { cta: CtaForm }) {
       style={{
         alignItems: "center",
         background: cta.backgroundColor,
-        borderRadius: 8,
+        borderRadius: Number(cta.borderRadius || 0),
         color: cta.textColor,
         display: "flex",
-        flexWrap: "wrap",
+        flexDirection: cta.displayType === "block" ? "column" : "row",
+        flexWrap: cta.displayType === "block" ? "nowrap" : "wrap",
         gap: 12,
         justifyContent: "center",
         minHeight: 64,
@@ -290,11 +491,13 @@ function Preview({ cta }: { cta: CtaForm }) {
         textAlign: "center",
       }}
     >
-      <strong>{cta.text}</strong>
+      <strong>{cta.headingHtml.replace(/<[^>]*>/g, "") || cta.text}</strong>
       <span
         style={{
-          border: `1px solid ${cta.textColor}`,
+          background: cta.timerBackground,
+          border: `1px solid ${cta.timerTextColor}`,
           borderRadius: 6,
+          color: cta.digitColor,
           fontVariantNumeric: "tabular-nums",
           padding: "5px 9px",
         }}
@@ -303,9 +506,9 @@ function Preview({ cta }: { cta: CtaForm }) {
       </span>
       <span
         style={{
-          background: cta.textColor,
+          background: cta.buttonBackground,
           borderRadius: 6,
-          color: cta.backgroundColor,
+          color: cta.buttonTextColor,
           padding: "7px 12px",
         }}
       >
@@ -319,6 +522,7 @@ function parseCtaForm(formData: FormData) {
   const targetDate = new Date(stringValue(formData, "targetDate", ""));
   const minutesDuration = Number(stringValue(formData, "minutesDuration", "15"));
   const priority = Number(stringValue(formData, "priority", "0"));
+  const borderRadius = Number(stringValue(formData, "borderRadius", "6"));
 
   if (Number.isNaN(targetDate.getTime())) {
     return { ok: false as const, error: "Choose a valid target date." };
@@ -335,20 +539,56 @@ function parseCtaForm(formData: FormData) {
     return { ok: false as const, error: "Priority must be a whole number." };
   }
 
+  if (!Number.isInteger(borderRadius) || borderRadius < 0 || borderRadius > 48) {
+    return { ok: false as const, error: "Corner radius must be between 0 and 48." };
+  }
+
   return {
     ok: true as const,
     value: {
-      name: stringValue(formData, "name", "Announcement").trim() || "Announcement",
+      name: stringValue(formData, "name", "Timer campaign").trim() || "Timer campaign",
       text: stringValue(formData, "text", "Flash Sale!").trim() || "Flash Sale!",
+      headingHtml: sanitizeHeadingHtml(
+        stringValue(formData, "headingHtml", "Flash Sale!"),
+      ),
       targetDate,
       isEvergreen: stringValue(formData, "isEvergreen", "false") === "true",
       minutesDuration,
+      displayType: enumValue(formData, "displayType", ["inline", "block"], "inline"),
+      placement: enumValue(
+        formData,
+        "placement",
+        ["theme_block", "product_page", "full_page"],
+        "theme_block",
+      ),
+      isSticky: formData.get("isSticky") === "on",
+      stickyPosition: enumValue(
+        formData,
+        "stickyPosition",
+        ["top", "bottom"],
+        "top",
+      ),
       backgroundColor: normalizeHex(
         stringValue(formData, "backgroundColor", "#000000"),
       ),
       textColor: normalizeHex(stringValue(formData, "textColor", "#ffffff")),
+      timerBackground: normalizeHex(
+        stringValue(formData, "timerBackground", "#111111"),
+      ),
+      timerTextColor: normalizeHex(
+        stringValue(formData, "timerTextColor", "#ffffff"),
+      ),
+      digitColor: normalizeHex(stringValue(formData, "digitColor", "#ffffff")),
+      labelColor: normalizeHex(stringValue(formData, "labelColor", "#d1d5db")),
+      buttonBackground: normalizeHex(
+        stringValue(formData, "buttonBackground", "#ffffff"),
+      ),
+      buttonTextColor: normalizeHex(
+        stringValue(formData, "buttonTextColor", "#000000"),
+      ),
       buttonText: stringValue(formData, "buttonText", "Shop now").trim(),
       buttonUrl: stringValue(formData, "buttonUrl", "").trim(),
+      borderRadius,
       priority,
       isEnabled: formData.get("isEnabled") === "on",
     },
@@ -374,6 +614,23 @@ function stringValue(formData: FormData, key: string, fallback: string) {
 
 function normalizeHex(value: string) {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#000000";
+}
+
+function enumValue(
+  formData: FormData,
+  key: string,
+  allowed: string[],
+  fallback: string,
+) {
+  const value = stringValue(formData, key, fallback);
+  return allowed.includes(value) ? value : fallback;
+}
+
+function sanitizeHeadingHtml(value: string) {
+  return value
+    .replace(/<(?!\/?(strong|b|em|i|span|br)\b)[^>]*>/gi, "")
+    .trim()
+    .slice(0, 500) || "Flash Sale!";
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

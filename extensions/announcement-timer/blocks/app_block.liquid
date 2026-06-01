@@ -11,11 +11,23 @@
   data-track-url="{{ track_url }}"
   data-shop="{{ shop.permanent_domain }}"
   data-text="{{ block.settings.text | escape }}"
+  data-heading-html="{{ block.settings.text | escape }}"
   data-target-date="{{ block.settings.target_date | escape }}"
   data-evergreen="{{ block.settings.is_evergreen }}"
   data-minutes="{{ block.settings.minutes_duration }}"
+  data-display-type="inline"
+  data-placement="theme_block"
+  data-sticky="false"
+  data-sticky-position="top"
   data-background="{{ block.settings.background_color }}"
   data-color="{{ block.settings.text_color }}"
+  data-timer-background="#111111"
+  data-timer-text-color="#ffffff"
+  data-digit-color="#ffffff"
+  data-label-color="#d1d5db"
+  data-button-background="#ffffff"
+  data-button-text-color="#000000"
+  data-border-radius="6"
   data-button-text="{{ block.settings.button_text | escape }}"
   data-button-url="{{ block.settings.button_url }}"
   data-enabled="{{ block.settings.is_enabled }}"
@@ -24,13 +36,10 @@
   <div class="flashbar__inner">
     <span class="flashbar__text"></span>
     <span class="flashbar__timer" aria-live="polite">
-      <span data-unit="days">00</span>
-      <span>:</span>
-      <span data-unit="hours">00</span>
-      <span>:</span>
-      <span data-unit="minutes">00</span>
-      <span>:</span>
-      <span data-unit="seconds">00</span>
+      <span class="flashbar__timer-cell"><span data-unit="days">00</span><small>Days</small></span>
+      <span class="flashbar__timer-cell"><span data-unit="hours">00</span><small>Hours</small></span>
+      <span class="flashbar__timer-cell"><span data-unit="minutes">00</span><small>Mins</small></span>
+      <span class="flashbar__timer-cell"><span data-unit="seconds">00</span><small>Secs</small></span>
     </span>
     <a class="flashbar__button"></a>
   </div>
@@ -42,6 +51,7 @@
     color: #fff;
     font: inherit;
     width: 100%;
+    z-index: 2147483000;
   }
 
   #{{ block_id }}[hidden] {
@@ -64,12 +74,27 @@
   }
 
   #{{ block_id }} .flashbar__timer {
-    border: 1px solid currentColor;
     border-radius: 6px;
     display: inline-flex;
     font-variant-numeric: tabular-nums;
-    gap: 4px;
-    padding: 5px 9px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  #{{ block_id }} .flashbar__timer-cell {
+    align-items: center;
+    border-radius: 4px;
+    display: inline-flex;
+    flex-direction: column;
+    font-weight: 700;
+    min-width: 42px;
+    padding: 4px 6px;
+  }
+
+  #{{ block_id }} .flashbar__timer-cell small {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.1;
   }
 
   #{{ block_id }} .flashbar__button {
@@ -88,13 +113,25 @@
 
     const fallback = {
       text: root.dataset.text || "Flash Sale!",
+      headingHtml: root.dataset.headingHtml || root.dataset.text || "Flash Sale!",
       targetDate: root.dataset.targetDate || new Date(Date.now() + 6048e5).toISOString(),
       isEvergreen: root.dataset.evergreen === "true",
       minutesDuration: Number(root.dataset.minutes || 15),
+      displayType: root.dataset.displayType || "inline",
+      placement: root.dataset.placement || "theme_block",
+      isSticky: root.dataset.sticky === "true",
+      stickyPosition: root.dataset.stickyPosition || "top",
       backgroundColor: root.dataset.background || "#000000",
       textColor: root.dataset.color || "#ffffff",
+      timerBackground: root.dataset.timerBackground || "#111111",
+      timerTextColor: root.dataset.timerTextColor || "#ffffff",
+      digitColor: root.dataset.digitColor || "#ffffff",
+      labelColor: root.dataset.labelColor || "#d1d5db",
+      buttonBackground: root.dataset.buttonBackground || "#ffffff",
+      buttonTextColor: root.dataset.buttonTextColor || "#000000",
       buttonText: root.dataset.buttonText || "Shop now",
       buttonUrl: root.dataset.buttonUrl || "",
+      borderRadius: Number(root.dataset.borderRadius || 6),
       isEnabled: root.dataset.enabled !== "false"
     };
 
@@ -115,6 +152,19 @@
     const source = () => {
       const params = new URLSearchParams(location.search);
       return params.get("utm_source") || document.referrer && new URL(document.referrer).hostname || "direct";
+    };
+
+    const safeHtml = (html) => {
+      const template = document.createElement("template");
+      template.innerHTML = String(html || "");
+      template.content.querySelectorAll("*").forEach((node) => {
+        if (!["STRONG", "B", "EM", "I", "SPAN", "BR"].includes(node.tagName)) {
+          node.replaceWith(document.createTextNode(node.textContent || ""));
+          return;
+        }
+        [...node.attributes].forEach((attribute) => node.removeAttribute(attribute.name));
+      });
+      return template.innerHTML;
     };
 
     const track = (settings, type) => {
@@ -142,13 +192,33 @@
 
       root.style.background = settings.backgroundColor;
       root.style.color = settings.textColor;
-      root.querySelector(".flashbar__text").textContent = settings.text;
+      root.style.borderRadius = Math.max(0, Number(settings.borderRadius || 0)) + "px";
+      root.style.position = settings.isSticky ? "fixed" : "";
+      root.style.left = settings.isSticky ? "0" : "";
+      root.style.right = settings.isSticky ? "0" : "";
+      root.style.top = settings.isSticky && settings.stickyPosition === "top" ? "0" : "";
+      root.style.bottom = settings.isSticky && settings.stickyPosition === "bottom" ? "0" : "";
+
+      const inner = root.querySelector(".flashbar__inner");
+      inner.style.flexDirection = settings.displayType === "block" ? "column" : "row";
+      root.querySelector(".flashbar__text").innerHTML = safeHtml(settings.headingHtml || settings.text);
+
+      const timer = root.querySelector(".flashbar__timer");
+      timer.style.background = settings.timerBackground;
+      timer.style.color = settings.timerTextColor;
+      timer.querySelectorAll("[data-unit]").forEach((node) => {
+        node.style.color = settings.digitColor;
+      });
+      timer.querySelectorAll("small").forEach((node) => {
+        node.style.color = settings.labelColor;
+      });
 
       const button = root.querySelector(".flashbar__button");
       button.textContent = settings.buttonText || "";
       button.href = settings.buttonUrl || "#";
       button.hidden = !settings.buttonText;
-      button.style.color = settings.backgroundColor;
+      button.style.background = settings.buttonBackground;
+      button.style.color = settings.buttonTextColor;
       button.onclick = () => track(settings, "click");
 
       let end = Date.parse(settings.targetDate);
