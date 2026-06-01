@@ -10,6 +10,7 @@ import {
   useActionData,
   useLoaderData,
   useLocation,
+  useNavigate,
   useNavigation,
   useParams,
 } from "react-router";
@@ -123,6 +124,7 @@ export default function CtaDetails() {
   const { cta, isNew } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const location = useLocation();
+  const navigate = useNavigate();
   const navigation = useNavigation();
   const params = useParams();
   const [form, setForm] = useState(cta);
@@ -139,7 +141,7 @@ export default function CtaDetails() {
     <Page
       title={isNew ? "Create CTA" : "Edit CTA"}
       subtitle={isNew ? "Add a new announcement bar." : `Editing ${params.id}`}
-      backAction={{ content: "CTA library", url: `/app/ctas${search}` }}
+      backAction={{ content: "CTA library", onAction: () => navigate(`/app/ctas${search}`) }}
     >
       <Form method="post">
         <input name="isEnabled" type="hidden" value={form.isEnabled ? "on" : "off"} />
@@ -260,7 +262,7 @@ export default function CtaDetails() {
             </Layout.Section>
           </Layout>
           <InlineStack align="end" gap="300">
-            <Button url={`/app/ctas${search}`}>Cancel</Button>
+            <Button onClick={() => navigate(`/app/ctas${search}`)}>Cancel</Button>
             <Button loading={isSaving} submit variant="primary">
               {isNew ? "Create CTA" : "Save CTA"}
             </Button>

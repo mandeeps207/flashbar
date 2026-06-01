@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Link, useLoaderData } from "react-router";
+import { Link, useLoaderData, useLocation, useNavigate } from "react-router";
 import {
   Badge,
   BlockStack,
@@ -25,67 +25,86 @@ type BreakdownRow = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const since = new Date();
-  since.setDate(since.getDate() - 30);
+  const since30 = new Date();
+  since30.setDate(since30.getDate() - 30);
+  const since14 = new Date();
+  since14.setDate(since14.getDate() - 14);
 
-  const [ctas, impressions, clicks, events] = await Promise.all([
-    prisma.announcementCta.findMany({
-      where: { shop: session.shop },
-      orderBy: [{ isEnabled: "desc" }, { priority: "asc" }, { createdAt: "desc" }],
-      take: 5,
-    }),
-    prisma.ctaEvent.count({
-      where: { shop: session.shop, type: "impression", createdAt: { gte: since } },
-    }),
-    prisma.ctaEvent.count({
-      where: { shop: session.shop, type: "click", createdAt: { gte: since } },
-    }),
-    prisma.ctaEvent.findMany({
-      where: { shop: session.shop, createdAt: { gte: since } },
-      select: {
-        type: true,
-        device: true,
-        source: true,
-        createdAt: true,
-        cta: { select: { id: true, name: true, text: true, isEnabled: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    }),
-  ]);
+  const [ctas, eventTotals, deviceGroups, sourceGroups, ctaGroups, trendEvents] =
+    await Promise.all([
+      prisma.announcementCta.findMany({
+        where: { shop: session.shop },
+        orderBy: [
+          { isEnabled: "desc" },
+          { priority: "asc" },
+          { createdAt: "desc" },
+        ],
+        select: { id: true, isEnabled: true, name: true, text: true },
+        take: 50,
+      }),
+      prisma.ctaEvent.groupBy({
+        by: ["type"],
+        where: { shop: session.shop, createdAt: { gte: since30 } },
+        _count: true,
+      }),
+      prisma.ctaEvent.groupBy({
+        by: ["device", "type"],
+        where: { shop: session.shop, createdAt: { gte: since30 } },
+        _count: true,
+      }),
+      prisma.ctaEvent.groupBy({
+        by: ["source", "type"],
+        where: { shop: session.shop, createdAt: { gte: since30 } },
+        _count: true,
+      }),
+      prisma.ctaEvent.groupBy({
+        by: ["ctaId", "type"],
+        where: { shop: session.shop, createdAt: { gte: since30 } },
+        _count: true,
+      }),
+      prisma.ctaEvent.findMany({
+        where: { shop: session.shop, createdAt: { gte: since14 } },
+        select: { type: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      }),
+    ]);
 
-  const deviceRows = summarize(events, "device");
-  const sourceRows = summarize(events, "source");
-  const topCtas = summarizeCtas(events);
-  const trend = buildTrend(events);
+  const impressions = eventTotals.find((row) => row.type === "impression")?._count ?? 0;
+  const clicks = eventTotals.find((row) => row.type === "click")?._count ?? 0;
+  const ctaNames = new Map(ctas.map((cta) => [cta.id, cta.name || cta.text]));
 
   return {
-    hasCtas: ctas.length > 0,
     activeCtas: ctas.filter((cta) => cta.isEnabled).length,
-    totalCtas: ctas.length,
-    impressions,
-    clicks,
     ctr: calculateCtr(clicks, impressions),
-    deviceRows,
-    sourceRows,
-    topCtas,
-    trend,
+    clicks,
+    deviceRows: summarizeGroups(deviceGroups, "device"),
+    hasCtas: ctas.length > 0,
+    impressions,
+    sourceRows: summarizeGroups(sourceGroups, "source"),
+    topCtas: summarizeCtaGroups(ctaGroups, ctaNames),
+    totalCtas: ctas.length,
+    trend: buildTrend(trendEvents),
   };
 };
 
 export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+  const { search } = useLocation();
+  const goToCtas = () => navigate(`/app/ctas${search}`);
+  const goToNewCta = () => navigate(`/app/ctas/new${search}`);
 
   return (
     <Page
       title="FlashBar dashboard"
       subtitle="Track how announcement CTAs perform across storefront visitors."
-      primaryAction={{ content: "Create CTA", url: "/app/ctas" }}
+      primaryAction={{ content: "Create CTA", onAction: goToNewCta }}
     >
       {!data.hasCtas ? (
         <Card>
           <EmptyState
             heading="Create your first announcement CTA"
-            action={{ content: "Create CTA", url: "/app/ctas" }}
+            action={{ content: "Create CTA", onAction: goToNewCta }}
             image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
           >
             <p>
@@ -113,7 +132,7 @@ export default function Dashboard() {
 
           <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
             <BreakdownCard title="Traffic source" rows={data.sourceRows} />
-            <TopCtas rows={data.topCtas} />
+            <TopCtas onManage={goToCtas} rows={data.topCtas} />
           </InlineGrid>
         </BlockStack>
       )}
@@ -148,7 +167,7 @@ function TrendCard({
       <BlockStack gap="400">
         <InlineStack align="space-between">
           <Text as="h2" variant="headingMd">
-            30-day activity
+            14-day activity
           </Text>
           <Badge tone="info">Impressions vs clicks</Badge>
         </InlineStack>
@@ -229,7 +248,7 @@ function BreakdownBar({ row }: { row: BreakdownRow }) {
           {row.label}
         </Text>
         <Text as="span" tone="subdued">
-          {formatNumber(row.impressions)} views · {row.ctr.toFixed(2)}% CTR
+          {formatNumber(row.impressions)} views - {row.ctr.toFixed(2)}% CTR
         </Text>
       </InlineStack>
       <Box background="bg-fill-secondary" borderRadius="200" minHeight="10px">
@@ -246,7 +265,13 @@ function BreakdownBar({ row }: { row: BreakdownRow }) {
   );
 }
 
-function TopCtas({ rows }: { rows: BreakdownRow[] }) {
+function TopCtas({
+  onManage,
+  rows,
+}: {
+  onManage: () => void;
+  rows: BreakdownRow[];
+}) {
   return (
     <Card>
       <BlockStack gap="400">
@@ -254,7 +279,7 @@ function TopCtas({ rows }: { rows: BreakdownRow[] }) {
           <Text as="h2" variant="headingMd">
             Top CTAs
           </Text>
-          <Button url="/app/ctas" variant="plain">
+          <Button onClick={onManage} variant="plain">
             Manage
           </Button>
         </InlineStack>
@@ -265,9 +290,9 @@ function TopCtas({ rows }: { rows: BreakdownRow[] }) {
         ) : (
           rows.map((row) => (
             <InlineStack key={row.label} align="space-between">
-              <Link to="/app/ctas">{row.label}</Link>
+              <Link to="#">{row.label}</Link>
               <Text as="span" tone="subdued">
-                {formatNumber(row.clicks)} clicks · {row.ctr.toFixed(2)}% CTR
+                {formatNumber(row.clicks)} clicks - {row.ctr.toFixed(2)}% CTR
               </Text>
             </InlineStack>
           ))
@@ -277,17 +302,22 @@ function TopCtas({ rows }: { rows: BreakdownRow[] }) {
   );
 }
 
-function summarize(
-  events: Array<{ type: string; device: string; source: string }>,
-  key: "device" | "source",
+function summarizeGroups(
+  groups: Array<{
+    type: string;
+    _count: number;
+    device?: string;
+    source?: string;
+  }>,
+  key: string,
 ) {
   const map = new Map<string, { impressions: number; clicks: number }>();
 
-  for (const event of events) {
-    const label = titleize(event[key] || "unknown");
+  for (const group of groups) {
+    const label = titleize((key === "device" ? group.device : group.source) || "unknown");
     const current = map.get(label) ?? { impressions: 0, clicks: 0 };
-    if (event.type === "click") current.clicks += 1;
-    if (event.type === "impression") current.impressions += 1;
+    if (group.type === "click") current.clicks = group._count;
+    if (group.type === "impression") current.impressions = group._count;
     map.set(label, current);
   }
 
@@ -300,19 +330,17 @@ function summarize(
     .sort((a, b) => b.impressions - a.impressions);
 }
 
-function summarizeCtas(
-  events: Array<{
-    type: string;
-    cta: { name: string; text: string } | null;
-  }>,
+function summarizeCtaGroups(
+  groups: Array<{ ctaId: string | null; type: string; _count: number }>,
+  names: Map<string, string>,
 ) {
   const map = new Map<string, { impressions: number; clicks: number }>();
 
-  for (const event of events) {
-    const label = event.cta?.name || event.cta?.text || "Deleted CTA";
+  for (const group of groups) {
+    const label = (group.ctaId && names.get(group.ctaId)) || "Deleted CTA";
     const current = map.get(label) ?? { impressions: 0, clicks: 0 };
-    if (event.type === "click") current.clicks += 1;
-    if (event.type === "impression") current.impressions += 1;
+    if (group.type === "click") current.clicks = group._count;
+    if (group.type === "impression") current.impressions = group._count;
     map.set(label, current);
   }
 
@@ -331,7 +359,12 @@ function buildTrend(events: Array<{ type: string; createdAt: Date }>) {
     const date = new Date();
     date.setDate(date.getDate() - (13 - index));
     const key = date.toISOString().slice(0, 10);
-    return { key, label: date.toLocaleDateString("en", { month: "short", day: "numeric" }), impressions: 0, clicks: 0 };
+    return {
+      key,
+      label: date.toLocaleDateString("en", { month: "short", day: "numeric" }),
+      impressions: 0,
+      clicks: 0,
+    };
   });
   const map = new Map(days.map((day) => [day.key, day]));
 
@@ -359,5 +392,7 @@ function titleize(value: string) {
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
-  return boundary.headers(headersArgs);
+  const headers = boundary.headers(headersArgs);
+  headers.set("Cache-Control", "private, max-age=30");
+  return headers;
 };

@@ -1,7 +1,6 @@
-import type { LoaderFunctionArgs } from "react-router";
 import prisma from "../db.server";
 
-export const loader = async (_args: LoaderFunctionArgs) => {
+export const loader = async () => {
   const env = {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
     SCOPES: Boolean(process.env.SCOPES),

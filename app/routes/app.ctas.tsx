@@ -3,7 +3,13 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { Form, useActionData, useLoaderData, useLocation } from "react-router";
+import {
+  Form,
+  useActionData,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+} from "react-router";
 import {
   Badge,
   Banner,
@@ -89,14 +95,16 @@ export default function Ctas() {
   const { ctas } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const location = useLocation();
+  const navigate = useNavigate();
   const search = location.search;
+  const goTo = (path: string) => navigate(`${path}${search}`);
 
   return (
     <Page
       title="CTA library"
       subtitle="Review all announcement CTAs, performance, status, and storefront priority."
-      backAction={{ content: "Dashboard", url: `/app${search}` }}
-      primaryAction={{ content: "Create CTA", url: `/app/ctas/new${search}` }}
+      backAction={{ content: "Dashboard", onAction: () => goTo("/app") }}
+      primaryAction={{ content: "Create CTA", onAction: () => goTo("/app/ctas/new") }}
     >
       <BlockStack gap="400">
         {actionData?.ok && <Banner tone="success">{actionData.message}</Banner>}
@@ -108,7 +116,7 @@ export default function Ctas() {
           <Card>
             <EmptyState
               heading="No CTAs yet"
-              action={{ content: "Create CTA", url: `/app/ctas/new${search}` }}
+              action={{ content: "Create CTA", onAction: () => goTo("/app/ctas/new") }}
               image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
             >
               <p>Create your first announcement CTA and start tracking it.</p>
@@ -167,7 +175,7 @@ export default function Ctas() {
                       <Td align="right">
                         <InlineStack align="end" gap="300" wrap={false}>
                           <Button
-                            url={`/app/ctas/${cta.id}${search}`}
+                            onClick={() => goTo(`/app/ctas/${cta.id}`)}
                             variant="plain"
                           >
                             Edit
