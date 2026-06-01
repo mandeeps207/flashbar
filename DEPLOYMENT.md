@@ -33,6 +33,13 @@ npm run config:link
 Configure an app proxy with subpath `/apps/flashbar` and point it at the Vercel
 deployment. The theme app extension block fetches `/apps/flashbar/settings`.
 
+Use these app URLs in the Partner Dashboard:
+
+```bash
+App URL: https://flashbar-eta.vercel.app
+Allowed redirection URL: https://flashbar-eta.vercel.app/auth/callback
+```
+
 ## Vercel
 
 Add these environment variables in Vercel:
