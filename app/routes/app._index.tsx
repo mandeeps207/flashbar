@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Link, useLoaderData, useLocation } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import {
   Badge,
   BlockStack,
@@ -25,6 +25,7 @@ type BreakdownRow = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  const navSearch = navigationSearch(request, session.shop);
   const since30 = new Date();
   since30.setDate(since30.getDate() - 30);
   const since14 = new Date();
@@ -84,14 +85,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     topCtas: summarizeCtaGroups(ctaGroups, ctaNames),
     totalCtas: ctas.length,
     trend: buildTrend(trendEvents),
+    navSearch,
   };
 };
 
 export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
-  const { search } = useLocation();
-  const goToCampaigns = () => window.location.assign(`/app/ctas${search}`);
-  const goToNewCampaign = () => window.location.assign(`/app/ctas/new${search}`);
+  const goToCampaigns = () => window.location.assign(`/app/ctas${data.navSearch}`);
+  const goToNewCampaign = () =>
+    window.location.assign(`/app/ctas/new${data.navSearch}`);
 
   return (
     <Page
@@ -388,6 +390,11 @@ function formatNumber(value: number) {
 
 function titleize(value: string) {
   return value.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function navigationSearch(request: Request, shop: string) {
+  const search = new URL(request.url).search;
+  return search || `?shop=${encodeURIComponent(shop)}`;
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

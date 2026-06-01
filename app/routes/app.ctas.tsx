@@ -7,7 +7,6 @@ import {
   useActionData,
   useFetcher,
   useLoaderData,
-  useLocation,
 } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -28,6 +27,7 @@ import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
+  const navSearch = navigationSearch(request, session.shop);
   const ctas = await prisma.announcementCta.findMany({
     where: { shop: session.shop },
     orderBy: [{ isEnabled: "desc" }, { priority: "asc" }, { createdAt: "desc" }],
@@ -52,6 +52,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   return {
+    navSearch,
     ctas: ctas.map((cta) => {
       const ctaMetrics = metrics.get(cta.id) ?? { impressions: 0, clicks: 0 };
       return {
@@ -94,15 +95,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
 export default function Ctas() {
   const { ctas } = useLoaderData<typeof loader>();
+  const { navSearch } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const deleteFetcher = useFetcher<typeof action>();
-  const location = useLocation();
   const [campaignToDelete, setCampaignToDelete] = useState<null | {
     id: string;
     name: string;
   }>(null);
-  const search = location.search;
-  const appPath = (path: string) => `${path}${search}`;
+  const appPath = (path: string) => `${path}${navSearch}`;
   const goTo = (path: string) => {
     window.location.assign(appPath(path));
   };
@@ -323,6 +323,11 @@ function calculateCtr(clicks: number, impressions: number) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
+}
+
+function navigationSearch(request: Request, shop: string) {
+  const search = new URL(request.url).search;
+  return search || `?shop=${encodeURIComponent(shop)}`;
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
