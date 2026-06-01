@@ -20,7 +20,7 @@
       "routes/_index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/app.additional": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/app._index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
-      "routes/app.ctas": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/app.ctas._index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/app.ctas.$id": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0"
     },
     "routes": {
@@ -132,6 +132,13 @@
         "parentId": "routes/app",
         "file": "app/routes/app.ctas.tsx",
         "path": "ctas",
+        "config": {}
+      },
+      "routes/app.ctas._index": {
+        "id": "routes/app.ctas._index",
+        "parentId": "routes/app.ctas",
+        "file": "app/routes/app.ctas._index.tsx",
+        "index": true,
         "config": {
           "runtime": "nodejs"
         }
@@ -141,7 +148,9 @@
         "parentId": "routes/app.ctas",
         "file": "app/routes/app.ctas.$id.tsx",
         "path": ":id",
-        "config": {}
+        "config": {
+          "runtime": "nodejs"
+        }
       }
     }
   },
@@ -236,6 +245,12 @@
         "file": "routes/app.ctas.tsx",
         "path": "ctas"
       },
+      "routes/app.ctas._index": {
+        "id": "routes/app.ctas._index",
+        "parentId": "routes/app.ctas",
+        "file": "routes/app.ctas._index.tsx",
+        "index": true
+      },
       "routes/app.ctas.$id": {
         "id": "routes/app.ctas.$id",
         "parentId": "routes/app.ctas",
@@ -318,6 +333,11 @@
                 "file": "routes/app.ctas.tsx",
                 "path": "ctas",
                 "children": [
+                  {
+                    "id": "routes/app.ctas._index",
+                    "file": "routes/app.ctas._index.tsx",
+                    "index": true
+                  },
                   {
                     "id": "routes/app.ctas.$id",
                     "file": "routes/app.ctas.$id.tsx",
