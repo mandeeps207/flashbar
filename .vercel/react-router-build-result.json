@@ -16,6 +16,7 @@
       "routes/apps.flashbar.track": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth.login": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/auth.$": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
+      "routes/health": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/_index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/app.additional": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
       "routes/app._index": "nodejs_eyJydW50aW1lIjoibm9kZWpzIn0",
@@ -78,6 +79,15 @@
         "parentId": "root",
         "file": "app/routes/auth.$.tsx",
         "path": "auth/*",
+        "config": {
+          "runtime": "nodejs"
+        }
+      },
+      "routes/health": {
+        "id": "routes/health",
+        "parentId": "root",
+        "file": "app/routes/health.tsx",
+        "path": "health",
         "config": {
           "runtime": "nodejs"
         }
@@ -182,6 +192,12 @@
         "file": "routes/auth.$.tsx",
         "path": "auth/*"
       },
+      "routes/health": {
+        "id": "routes/health",
+        "parentId": "root",
+        "file": "routes/health.tsx",
+        "path": "health"
+      },
       "routes/_index": {
         "id": "routes/_index",
         "parentId": "root",
@@ -257,6 +273,11 @@
             "id": "routes/auth.$",
             "file": "routes/auth.$.tsx",
             "path": "auth/*"
+          },
+          {
+            "id": "routes/health",
+            "file": "routes/health.tsx",
+            "path": "health"
           },
           {
             "id": "routes/_index",
