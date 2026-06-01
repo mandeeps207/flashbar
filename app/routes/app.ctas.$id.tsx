@@ -10,7 +10,6 @@ import {
   useActionData,
   useLoaderData,
   useLocation,
-  useNavigate,
   useNavigation,
   useParams,
 } from "react-router";
@@ -160,12 +159,12 @@ export default function CtaDetails() {
   const { cta, isNew } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const location = useLocation();
-  const navigate = useNavigate();
   const navigation = useNavigation();
   const params = useParams();
   const [form, setForm] = useState(cta);
   const isSaving = navigation.state === "submitting";
   const search = location.search;
+  const backToCampaigns = () => window.location.assign(`/app/ctas${search}`);
 
   useEffect(() => setForm(cta), [cta]);
 
@@ -178,7 +177,7 @@ export default function CtaDetails() {
       fullWidth
       title={isNew ? "Create timer campaign" : "Edit timer campaign"}
       subtitle={isNew ? "Build a countdown timer campaign." : `Editing ${params.id}`}
-      backAction={{ content: "Timer campaigns", onAction: () => navigate(`/app/ctas${search}`) }}
+      backAction={{ content: "Timer campaigns", onAction: backToCampaigns }}
     >
       <Form method="post">
         <input name="isEnabled" type="hidden" value={form.isEnabled ? "on" : "off"} />
@@ -353,7 +352,7 @@ export default function CtaDetails() {
             </Layout.Section>
           </Layout>
           <InlineStack align="end" gap="300">
-            <Button onClick={() => navigate(`/app/ctas${search}`)}>Cancel</Button>
+            <Button onClick={backToCampaigns}>Cancel</Button>
             <Button loading={isSaving} submit variant="primary">
               {isNew ? "Create campaign" : "Save campaign"}
             </Button>

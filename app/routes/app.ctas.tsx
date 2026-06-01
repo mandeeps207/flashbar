@@ -4,12 +4,10 @@ import type {
   LoaderFunctionArgs,
 } from "react-router";
 import {
-  Link as RouterLink,
   useActionData,
   useFetcher,
   useLoaderData,
   useLocation,
-  useNavigate,
 } from "react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -99,13 +97,15 @@ export default function Ctas() {
   const actionData = useActionData<typeof action>();
   const deleteFetcher = useFetcher<typeof action>();
   const location = useLocation();
-  const navigate = useNavigate();
   const [campaignToDelete, setCampaignToDelete] = useState<null | {
     id: string;
     name: string;
   }>(null);
   const search = location.search;
-  const goTo = (path: string) => navigate(`${path}${search}`);
+  const appPath = (path: string) => `${path}${search}`;
+  const goTo = (path: string) => {
+    window.location.assign(appPath(path));
+  };
   const isDeleting = deleteFetcher.state !== "idle";
   const deletedId = useMemo(() => {
     const formData = deleteFetcher.formData;
@@ -208,12 +208,12 @@ export default function Ctas() {
                       <Td>{cta.updatedAt}</Td>
                       <Td align="right">
                         <InlineStack align="end" gap="300" wrap={false}>
-                          <RouterLink
+                          <a
+                            href={appPath(`/app/ctas/${cta.id}`)}
                             style={{ color: "#005bd3", textDecoration: "none" }}
-                            to={`/app/ctas/${cta.id}${search}`}
                           >
                             Edit
-                          </RouterLink>
+                          </a>
                           <Button
                             disabled={isDeleting}
                             onClick={() =>

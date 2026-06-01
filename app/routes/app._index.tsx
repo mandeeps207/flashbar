@@ -1,5 +1,5 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "react-router";
-import { Link, useLoaderData, useLocation, useNavigate } from "react-router";
+import { Link, useLoaderData, useLocation } from "react-router";
 import {
   Badge,
   BlockStack,
@@ -89,10 +89,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
   const { search } = useLocation();
-  const goToCampaigns = () => navigate(`/app/ctas${search}`);
-  const goToNewCampaign = () => navigate(`/app/ctas/new${search}`);
+  const goToCampaigns = () => window.location.assign(`/app/ctas${search}`);
+  const goToNewCampaign = () => window.location.assign(`/app/ctas/new${search}`);
 
   return (
     <Page
