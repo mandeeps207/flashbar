@@ -1,54 +1,35 @@
-import { AppProvider } from "@shopify/shopify-app-react-router/react";
-import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { Form, useActionData, useLoaderData } from "react-router";
+import { redirect } from "react-router";
 
 import { login } from "../../shopify.server";
 import { loginErrorMessage } from "./error.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const url = new URL(request.url);
+
+  if (!url.searchParams.get("shop")) {
+    throw redirect("/");
+  }
+
   const errors = loginErrorMessage(await login(request));
 
-  return { errors };
+  if (errors.shop) {
+    throw redirect("/");
+  }
+
+  return null;
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const errors = loginErrorMessage(await login(request));
 
-  return {
-    errors,
-  };
+  if (errors.shop) {
+    throw redirect("/");
+  }
+
+  return null;
 };
 
 export default function Auth() {
-  const loaderData = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const [shop, setShop] = useState("");
-  const { errors } = actionData || loaderData;
-
-  return (
-    <AppProvider embedded={false}>
-      <s-page heading="FlashBar">
-        <Form method="post">
-          <s-section heading="Connect your Shopify store">
-            <s-paragraph>
-              Enter your store domain to open the FlashBar dashboard.
-            </s-paragraph>
-            <s-text-field
-              name="shop"
-              label="Shop domain"
-              details="your-store.myshopify.com"
-              value={shop}
-              onChange={(e) => setShop(e.currentTarget.value)}
-              autocomplete="on"
-              error={errors.shop}
-            ></s-text-field>
-            <s-button type="submit" variant="primary">
-              Continue
-            </s-button>
-          </s-section>
-        </Form>
-      </s-page>
-    </AppProvider>
-  );
+  return null;
 }

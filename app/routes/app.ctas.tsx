@@ -3,7 +3,7 @@ import type {
   HeadersFunction,
   LoaderFunctionArgs,
 } from "react-router";
-import { Form, Link, useActionData, useLoaderData } from "react-router";
+import { Form, useActionData, useLoaderData, useLocation } from "react-router";
 import {
   Badge,
   Banner,
@@ -88,13 +88,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function Ctas() {
   const { ctas } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const location = useLocation();
+  const search = location.search;
 
   return (
     <Page
       title="CTA library"
       subtitle="Review all announcement CTAs, performance, status, and storefront priority."
-      backAction={{ content: "Dashboard", url: "/app" }}
-      primaryAction={{ content: "Create CTA", url: "/app/ctas/new" }}
+      backAction={{ content: "Dashboard", url: `/app${search}` }}
+      primaryAction={{ content: "Create CTA", url: `/app/ctas/new${search}` }}
     >
       <BlockStack gap="400">
         {actionData?.ok && <Banner tone="success">{actionData.message}</Banner>}
@@ -106,7 +108,7 @@ export default function Ctas() {
           <Card>
             <EmptyState
               heading="No CTAs yet"
-              action={{ content: "Create CTA", url: "/app/ctas/new" }}
+              action={{ content: "Create CTA", url: `/app/ctas/new${search}` }}
               image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
             >
               <p>Create your first announcement CTA and start tracking it.</p>
@@ -147,7 +149,7 @@ export default function Ctas() {
                             {cta.text}
                           </Text>
                           <Text as="span" tone="subdued">
-                            {cta.buttonText} · {cta.buttonUrl || "No URL"}
+                            {cta.buttonText} - {cta.buttonUrl || "No URL"}
                           </Text>
                         </BlockStack>
                       </Td>
@@ -164,7 +166,10 @@ export default function Ctas() {
                       <Td>{cta.updatedAt}</Td>
                       <Td align="right">
                         <InlineStack align="end" gap="300" wrap={false}>
-                          <Button url={`/app/ctas/${cta.id}`} variant="plain">
+                          <Button
+                            url={`/app/ctas/${cta.id}${search}`}
+                            variant="plain"
+                          >
                             Edit
                           </Button>
                           <Form method="post">
