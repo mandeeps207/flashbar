@@ -28,20 +28,25 @@ export default function Auth() {
 
   return (
     <AppProvider embedded={false}>
-      <s-page>
+      <s-page heading="FlashBar">
         <Form method="post">
-        <s-section heading="Log in">
-          <s-text-field
-            name="shop"
-            label="Shop domain"
-            details="example.myshopify.com"
-            value={shop}
-            onChange={(e) => setShop(e.currentTarget.value)}
-            autocomplete="on"
-            error={errors.shop}
-          ></s-text-field>
-          <s-button type="submit">Log in</s-button>
-        </s-section>
+          <s-section heading="Connect your Shopify store">
+            <s-paragraph>
+              Enter your store domain to open the FlashBar dashboard.
+            </s-paragraph>
+            <s-text-field
+              name="shop"
+              label="Shop domain"
+              details="your-store.myshopify.com"
+              value={shop}
+              onChange={(e) => setShop(e.currentTarget.value)}
+              autocomplete="on"
+              error={errors.shop}
+            ></s-text-field>
+            <s-button type="submit" variant="primary">
+              Continue
+            </s-button>
+          </s-section>
         </Form>
       </s-page>
     </AppProvider>
