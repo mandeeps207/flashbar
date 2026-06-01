@@ -1,0 +1,8 @@
+build
+node_modules
+.shopify
+.vercel
+.react-router
+.cache
+prisma/dev.sqlite
+prisma/dev.sqlite-journal
