@@ -38,7 +38,6 @@ type TrendRow = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const navSearch = navigationSearch(request, session.shop);
   const since30 = new Date();
   since30.setDate(since30.getDate() - 30);
   const since14 = new Date();
@@ -75,27 +74,25 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     topCtas: summarizeCampaignRows(aggregates, ctaNames),
     totalCtas: ctas.length,
     trend: buildTrend(trendRows),
-    navSearch,
   };
 };
 
 export default function Dashboard() {
   const data = useLoaderData<typeof loader>();
-  const goToCampaigns = () => window.location.assign(`/app/ctas${data.navSearch}`);
-  const goToNewCampaign = () =>
-    window.location.assign(`/app/ctas/new${data.navSearch}`);
+  const goToCampaigns = () => window.location.assign("/app/ctas");
+  const newCampaignUrl = "/app/ctas/new";
 
   return (
     <Page
       title="FlashBar dashboard"
       subtitle="Track how countdown timer campaigns perform across storefront visitors."
-      primaryAction={{ content: "Create campaign", onAction: goToNewCampaign }}
+      primaryAction={{ content: "Create campaign", url: newCampaignUrl }}
     >
       {!data.hasCtas ? (
         <Card>
           <EmptyState
             heading="Create your first timer campaign"
-            action={{ content: "Create campaign", onAction: goToNewCampaign }}
+            action={{ content: "Create campaign", url: newCampaignUrl }}
             image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
           >
             <p>
@@ -403,11 +400,6 @@ function formatNumber(value: number) {
 
 function titleize(value: string) {
   return value.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-function navigationSearch(request: Request, shop: string) {
-  const search = new URL(request.url).search;
-  return search || `?shop=${encodeURIComponent(shop)}`;
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

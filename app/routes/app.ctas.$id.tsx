@@ -85,10 +85,9 @@ const blankCta: CtaForm = {
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const navSearch = navigationSearch(request, session.shop);
 
   if (params.id === "new") {
-    return { cta: blankCta, isNew: true, navSearch };
+    return { cta: blankCta, isNew: true };
   }
 
   const cta = await prisma.announcementCta.findFirst({
@@ -101,7 +100,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
   return {
     isNew: false,
-    navSearch,
     cta: {
       name: cta.name,
       text: cta.text,
@@ -132,7 +130,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const navSearch = navigationSearch(request, session.shop);
   const formData = await request.formData();
   const parsed = parseCtaForm(formData);
 
@@ -154,17 +151,17 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     });
   }
 
-  throw redirect(`/app/ctas${navSearch}`);
+  throw redirect("/app/ctas");
 };
 
 export default function CtaDetails() {
-  const { cta, isNew, navSearch } = useLoaderData<typeof loader>();
+  const { cta, isNew } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const params = useParams();
   const [form, setForm] = useState(cta);
   const isSaving = navigation.state === "submitting";
-  const backToCampaigns = () => window.location.assign(`/app/ctas${navSearch}`);
+  const backToCampaigns = () => window.location.assign("/app/ctas");
 
   useEffect(() => setForm(cta), [cta]);
 
@@ -354,7 +351,7 @@ export default function CtaDetails() {
           <InlineStack align="end" gap="300">
             <Button onClick={backToCampaigns}>Cancel</Button>
             <Button loading={isSaving} submit variant="primary">
-              {isNew ? "Create campaign" : "Save campaign"}
+              Save campaign
             </Button>
           </InlineStack>
         </BlockStack>
@@ -630,11 +627,6 @@ function sanitizeHeadingHtml(value: string) {
     .replace(/<(?!\/?(strong|b|em|i|span|br)\b)[^>]*>/gi, "")
     .trim()
     .slice(0, 500) || "Flash Sale!";
-}
-
-function navigationSearch(request: Request, shop: string) {
-  const search = new URL(request.url).search;
-  return search || `?shop=${encodeURIComponent(shop)}`;
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

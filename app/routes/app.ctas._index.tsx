@@ -33,7 +33,6 @@ type CampaignMetricRow = {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
-  const navSearch = navigationSearch(request, session.shop);
   const ctas = await prisma.announcementCta.findMany({
     where: { shop: session.shop },
     orderBy: [{ isEnabled: "desc" }, { priority: "asc" }, { createdAt: "desc" }],
@@ -72,7 +71,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   return {
-    navSearch,
     ctas: ctas.map((cta) => {
       const ctaMetrics = metrics.get(cta.id) ?? { impressions: 0, clicks: 0 };
       return {
@@ -114,16 +112,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Ctas() {
-  const { ctas, navSearch } = useLoaderData<typeof loader>();
+  const { ctas } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const deleteFetcher = useFetcher<typeof action>();
   const [campaignToDelete, setCampaignToDelete] = useState<null | {
     id: string;
     name: string;
   }>(null);
-  const appPath = (path: string) => `${path}${navSearch}`;
   const goTo = (path: string) => {
-    window.location.assign(appPath(path));
+    window.location.assign(path);
   };
   const isDeleting = deleteFetcher.state !== "idle";
   const deletedId = useMemo(() => {
@@ -147,7 +144,7 @@ export default function Ctas() {
       backAction={{ content: "Dashboard", onAction: () => goTo("/app") }}
       primaryAction={{
         content: "Create campaign",
-        onAction: () => goTo("/app/ctas/new"),
+        url: "/app/ctas/new",
       }}
     >
       <BlockStack gap="400">
@@ -165,7 +162,7 @@ export default function Ctas() {
               heading="No timer campaigns yet"
               action={{
                 content: "Create campaign",
-                onAction: () => goTo("/app/ctas/new"),
+                url: "/app/ctas/new",
               }}
               image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
             >
@@ -228,7 +225,7 @@ export default function Ctas() {
                       <Td align="right">
                         <InlineStack align="end" gap="300" wrap={false}>
                           <a
-                            href={appPath(`/app/ctas/${cta.id}`)}
+                            href={`/app/ctas/${cta.id}`}
                             style={{ color: "#005bd3", textDecoration: "none" }}
                           >
                             Edit
@@ -342,11 +339,6 @@ function calculateCtr(clicks: number, impressions: number) {
 
 function formatNumber(value: number) {
   return new Intl.NumberFormat("en").format(value);
-}
-
-function navigationSearch(request: Request, shop: string) {
-  const search = new URL(request.url).search;
-  return search || `?shop=${encodeURIComponent(shop)}`;
 }
 
 export const headers: HeadersFunction = (headersArgs) => {

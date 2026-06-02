@@ -9,24 +9,23 @@ import "@shopify/polaris/build/esm/styles.css";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { session } = await authenticate.admin(request);
+  await authenticate.admin(request);
 
   // eslint-disable-next-line no-undef
   return {
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    navSearch: navigationSearch(request, session.shop),
   };
 };
 
 export default function App() {
-  const { apiKey, navSearch } = useLoaderData<typeof loader>();
+  const { apiKey } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider embedded apiKey={apiKey}>
       <PolarisAppProvider i18n={enTranslations}>
         <s-app-nav>
-          <s-link href={`/app${navSearch}`}>Dashboard</s-link>
-          <s-link href={`/app/ctas${navSearch}`}>Timer campaigns</s-link>
+          <s-link href="/app">Dashboard</s-link>
+          <s-link href="/app/ctas">Timer campaigns</s-link>
         </s-app-nav>
         <Outlet />
       </PolarisAppProvider>
@@ -42,8 +41,3 @@ export function ErrorBoundary() {
 export const headers: HeadersFunction = (headersArgs) => {
   return boundary.headers(headersArgs);
 };
-
-function navigationSearch(request: Request, shop: string) {
-  const search = new URL(request.url).search;
-  return search || `?shop=${encodeURIComponent(shop)}`;
-}
