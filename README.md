@@ -1,3 +1,20 @@
+# FlashBar
+
+FlashBar is a Shopify embedded app for countdown timer campaigns. Merchants can
+create storefront timer campaigns, review impressions/clicks/CTR, and render the
+timer through a Shopify Theme App Extension.
+
+## App Store review notes
+
+- Current pricing: free. No external billing or Shopify Billing API charge flow
+  is used in this version.
+- Current Admin API scopes: none required. Campaign settings and analytics are
+  stored in the app database.
+- Storefront delivery: Shopify Theme App Extension in
+  `extensions/announcement-timer`.
+- Merchant setup: open the FlashBar dashboard, use "Open theme editor", add the
+  "FlashBar timer" block, and place it on the desired theme template or section.
+
 # Shopify App Template - React Router
 
 This is a template for building a [Shopify app](https://shopify.dev/docs/apps/getting-started) using [React Router](https://reactrouter.com/). It was forked from the [Shopify Remix app template](https://github.com/Shopify/shopify-app-template-remix) and converted to React Router.

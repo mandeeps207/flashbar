@@ -4,11 +4,16 @@ export const loader = async () => {
   const startedAt = performance.now();
   const env = {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
-    SCOPES: Boolean(process.env.SCOPES),
+    SCOPES: process.env.SCOPES ?? "",
     SHOPIFY_API_KEY: Boolean(process.env.SHOPIFY_API_KEY),
     SHOPIFY_API_SECRET: Boolean(process.env.SHOPIFY_API_SECRET),
     SHOPIFY_APP_URL: Boolean(process.env.SHOPIFY_APP_URL),
   };
+  const requiredEnvReady =
+    env.DATABASE_URL &&
+    env.SHOPIFY_API_KEY &&
+    env.SHOPIFY_API_SECRET &&
+    env.SHOPIFY_APP_URL;
 
   let database = true;
   let databaseMs = 0;
@@ -21,7 +26,7 @@ export const loader = async () => {
   }
 
   return Response.json({
-    ok: database && Object.values(env).every(Boolean),
+    ok: database && requiredEnvReady,
     database,
     databaseMs,
     env,

@@ -1,5 +1,18 @@
 # FlashBar Deployment
 
+## App Store review notes
+
+FlashBar is currently a free app. It doesn't charge merchants and doesn't use
+external billing, off-platform payment forms, or the Shopify Billing API.
+
+FlashBar doesn't need Shopify Admin API access scopes for the current feature
+set. Campaign settings and analytics are stored in the app database, and the
+storefront timer is delivered through a Shopify Theme App Extension.
+
+The Theme App Extension setup flow is available from the dashboard. Merchants
+can open the theme editor, add the "FlashBar timer" block, and place it on a
+section, product template, or sticky announcement area.
+
 ## Supabase
 
 Use the pooled Supabase connection for app runtime queries and the direct
@@ -47,10 +60,9 @@ Add these environment variables in Vercel:
 ```bash
 SHOPIFY_API_KEY
 SHOPIFY_API_SECRET
-SCOPES
+SCOPES # leave blank for the current free/theme-extension-only version
 SHOPIFY_APP_URL
 DATABASE_URL
-DIRECT_URL
 ```
 
 Deploy from Vercel or run:

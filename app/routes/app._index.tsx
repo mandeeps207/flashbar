@@ -74,6 +74,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     topCtas: summarizeCampaignRows(aggregates, ctaNames),
     totalCtas: ctas.length,
     trend: buildTrend(trendRows),
+    themeEditorUrl: themeEditorUrl(session.shop),
   };
 };
 
@@ -88,42 +89,80 @@ export default function Dashboard() {
       subtitle="Track how countdown timer campaigns perform across storefront visitors."
       primaryAction={{ content: "Create campaign", url: newCampaignUrl }}
     >
-      {!data.hasCtas ? (
-        <Card>
-          <EmptyState
-            heading="Create your first timer campaign"
-            action={{ content: "Create campaign", url: newCampaignUrl }}
-            image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
-          >
-            <p>
-              Add a countdown timer, heading, and button before tracking impressions,
-              clicks, CTR, devices, and traffic sources.
-            </p>
-          </EmptyState>
-        </Card>
-      ) : (
-        <BlockStack gap="500">
-          <InlineGrid columns={{ xs: 1, sm: 2, lg: 4 }} gap="400">
-            <MetricCard label="Impressions" value={formatNumber(data.impressions)} />
-            <MetricCard label="Clicks" value={formatNumber(data.clicks)} />
-            <MetricCard label="CTR" value={`${data.ctr.toFixed(2)}%`} />
-            <MetricCard
-              label="Active campaigns"
-              value={`${data.activeCtas}/${data.totalCtas}`}
-            />
-          </InlineGrid>
+      <BlockStack gap="500">
+        <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
+          <Card>
+            <BlockStack gap="300">
+              <InlineStack align="space-between">
+                <Text as="h2" variant="headingMd">
+                  Theme setup
+                </Text>
+                <Badge tone="info">Theme app extension</Badge>
+              </InlineStack>
+              <Text as="p" tone="subdued">
+                Add the FlashBar timer block in the theme editor, then place it
+                on the product template, a section, or a sticky announcement area.
+              </Text>
+              <InlineStack>
+                <Button external url={data.themeEditorUrl}>
+                  Open theme editor
+                </Button>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+          <Card>
+            <BlockStack gap="300">
+              <InlineStack align="space-between">
+                <Text as="h2" variant="headingMd">
+                  Plan
+                </Text>
+                <Badge tone="success">Free</Badge>
+              </InlineStack>
+              <Text as="p" tone="subdued">
+                FlashBar does not charge merchants in this app version. No
+                external billing or off-platform payment flow is used.
+              </Text>
+            </BlockStack>
+          </Card>
+        </InlineGrid>
 
-          <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
-            <TrendCard rows={data.trend} />
-            <BreakdownCard title="Device performance" rows={data.deviceRows} />
-          </InlineGrid>
+        {!data.hasCtas ? (
+          <Card>
+            <EmptyState
+              heading="Create your first timer campaign"
+              action={{ content: "Create campaign", url: newCampaignUrl }}
+              image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+            >
+              <p>
+                Add a countdown timer, heading, and button before tracking
+                impressions, clicks, CTR, devices, and traffic sources.
+              </p>
+            </EmptyState>
+          </Card>
+        ) : (
+          <>
+            <InlineGrid columns={{ xs: 1, sm: 2, lg: 4 }} gap="400">
+              <MetricCard label="Impressions" value={formatNumber(data.impressions)} />
+              <MetricCard label="Clicks" value={formatNumber(data.clicks)} />
+              <MetricCard label="CTR" value={`${data.ctr.toFixed(2)}%`} />
+              <MetricCard
+                label="Active campaigns"
+                value={`${data.activeCtas}/${data.totalCtas}`}
+              />
+            </InlineGrid>
 
-          <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
-            <BreakdownCard title="Traffic source" rows={data.sourceRows} />
-            <TopCtas onManage={goToCampaigns} rows={data.topCtas} />
-          </InlineGrid>
-        </BlockStack>
-      )}
+            <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
+              <TrendCard rows={data.trend} />
+              <BreakdownCard title="Device performance" rows={data.deviceRows} />
+            </InlineGrid>
+
+            <InlineGrid columns={{ xs: 1, lg: 2 }} gap="400">
+              <BreakdownCard title="Traffic source" rows={data.sourceRows} />
+              <TopCtas onManage={goToCampaigns} rows={data.topCtas} />
+            </InlineGrid>
+          </>
+        )}
+      </BlockStack>
     </Page>
   );
 }
@@ -400,6 +439,13 @@ function formatNumber(value: number) {
 
 function titleize(value: string) {
   return value.replace(/[-_]/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function themeEditorUrl(shop: string) {
+  const storeHandle = shop.replace(/\.myshopify\.com$/i, "");
+  return `https://admin.shopify.com/store/${encodeURIComponent(
+    storeHandle,
+  )}/themes/current/editor?context=apps`;
 }
 
 export const headers: HeadersFunction = (headersArgs) => {
