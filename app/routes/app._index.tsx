@@ -23,6 +23,19 @@ type BreakdownRow = {
   ctr: number;
 };
 
+type AggregateRow = {
+  bucket: "total" | "device" | "source" | "campaign";
+  label: string;
+  type: string;
+  count: bigint;
+};
+
+type TrendRow = {
+  day: Date;
+  type: string;
+  count: bigint;
+};
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const navSearch = navigationSearch(request, session.shop);
@@ -31,60 +44,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const since14 = new Date();
   since14.setDate(since14.getDate() - 14);
 
-  const [ctas, eventTotals, deviceGroups, sourceGroups, ctaGroups, trendEvents] =
-    await Promise.all([
-      prisma.announcementCta.findMany({
-        where: { shop: session.shop },
-        orderBy: [
-          { isEnabled: "desc" },
-          { priority: "asc" },
-          { createdAt: "desc" },
-        ],
-        select: { id: true, isEnabled: true, name: true, text: true },
-        take: 50,
-      }),
-      prisma.ctaEvent.groupBy({
-        by: ["type"],
-        where: { shop: session.shop, createdAt: { gte: since30 } },
-        _count: true,
-      }),
-      prisma.ctaEvent.groupBy({
-        by: ["device", "type"],
-        where: { shop: session.shop, createdAt: { gte: since30 } },
-        _count: true,
-      }),
-      prisma.ctaEvent.groupBy({
-        by: ["source", "type"],
-        where: { shop: session.shop, createdAt: { gte: since30 } },
-        _count: true,
-      }),
-      prisma.ctaEvent.groupBy({
-        by: ["ctaId", "type"],
-        where: { shop: session.shop, createdAt: { gte: since30 } },
-        _count: true,
-      }),
-      prisma.ctaEvent.findMany({
-        where: { shop: session.shop, createdAt: { gte: since14 } },
-        select: { type: true, createdAt: true },
-        orderBy: { createdAt: "asc" },
-      }),
-    ]);
+  const ctas = await prisma.announcementCta.findMany({
+    where: { shop: session.shop },
+    orderBy: [
+      { isEnabled: "desc" },
+      { priority: "asc" },
+      { createdAt: "desc" },
+    ],
+    select: { id: true, isEnabled: true, name: true, text: true },
+    take: 50,
+  });
+  const [aggregates, trendRows] = await Promise.all([
+    loadDashboardAggregates(session.shop, since30),
+    loadTrendRows(session.shop, since14),
+  ]);
 
-  const impressions = eventTotals.find((row) => row.type === "impression")?._count ?? 0;
-  const clicks = eventTotals.find((row) => row.type === "click")?._count ?? 0;
+  const totals = summarizeAggregateRows(aggregates, "total");
+  const impressions = totals[0]?.impressions ?? 0;
+  const clicks = totals[0]?.clicks ?? 0;
   const ctaNames = new Map(ctas.map((cta) => [cta.id, cta.name || cta.text]));
 
   return {
     activeCtas: ctas.filter((cta) => cta.isEnabled).length,
     ctr: calculateCtr(clicks, impressions),
     clicks,
-    deviceRows: summarizeGroups(deviceGroups, "device"),
+    deviceRows: summarizeAggregateRows(aggregates, "device"),
     hasCtas: ctas.length > 0,
     impressions,
-    sourceRows: summarizeGroups(sourceGroups, "source"),
-    topCtas: summarizeCtaGroups(ctaGroups, ctaNames),
+    sourceRows: summarizeAggregateRows(aggregates, "source"),
+    topCtas: summarizeCampaignRows(aggregates, ctaNames),
     totalCtas: ctas.length,
-    trend: buildTrend(trendEvents),
+    trend: buildTrend(trendRows),
     navSearch,
   };
 };
@@ -303,22 +293,48 @@ function TopCtas({
   );
 }
 
-function summarizeGroups(
-  groups: Array<{
-    type: string;
-    _count: number;
-    device?: string;
-    source?: string;
-  }>,
-  key: string,
-) {
+async function loadDashboardAggregates(shop: string, since: Date) {
+  return prisma.$queryRaw<AggregateRow[]>`
+    SELECT 'total' AS bucket, 'all' AS label, "type", COUNT(*) AS count
+    FROM "CtaEvent"
+    WHERE "shop" = ${shop} AND "createdAt" >= ${since}
+    GROUP BY "type"
+    UNION ALL
+    SELECT 'device' AS bucket, COALESCE(NULLIF("device", ''), 'unknown') AS label, "type", COUNT(*) AS count
+    FROM "CtaEvent"
+    WHERE "shop" = ${shop} AND "createdAt" >= ${since}
+    GROUP BY "device", "type"
+    UNION ALL
+    SELECT 'source' AS bucket, COALESCE(NULLIF("source", ''), 'direct') AS label, "type", COUNT(*) AS count
+    FROM "CtaEvent"
+    WHERE "shop" = ${shop} AND "createdAt" >= ${since}
+    GROUP BY "source", "type"
+    UNION ALL
+    SELECT 'campaign' AS bucket, COALESCE("ctaId", 'deleted') AS label, "type", COUNT(*) AS count
+    FROM "CtaEvent"
+    WHERE "shop" = ${shop} AND "createdAt" >= ${since}
+    GROUP BY "ctaId", "type"
+  `;
+}
+
+async function loadTrendRows(shop: string, since: Date) {
+  return prisma.$queryRaw<TrendRow[]>`
+    SELECT DATE_TRUNC('day', "createdAt") AS day, "type", COUNT(*) AS count
+    FROM "CtaEvent"
+    WHERE "shop" = ${shop} AND "createdAt" >= ${since}
+    GROUP BY day, "type"
+    ORDER BY day ASC
+  `;
+}
+
+function summarizeAggregateRows(groups: AggregateRow[], bucket: AggregateRow["bucket"]) {
   const map = new Map<string, { impressions: number; clicks: number }>();
 
-  for (const group of groups) {
-    const label = titleize((key === "device" ? group.device : group.source) || "unknown");
+  for (const group of groups.filter((row) => row.bucket === bucket)) {
+    const label = titleize(group.label || "unknown");
     const current = map.get(label) ?? { impressions: 0, clicks: 0 };
-    if (group.type === "click") current.clicks = group._count;
-    if (group.type === "impression") current.impressions = group._count;
+    if (group.type === "click") current.clicks = Number(group.count);
+    if (group.type === "impression") current.impressions = Number(group.count);
     map.set(label, current);
   }
 
@@ -331,17 +347,14 @@ function summarizeGroups(
     .sort((a, b) => b.impressions - a.impressions);
 }
 
-function summarizeCtaGroups(
-  groups: Array<{ ctaId: string | null; type: string; _count: number }>,
-  names: Map<string, string>,
-) {
+function summarizeCampaignRows(groups: AggregateRow[], names: Map<string, string>) {
   const map = new Map<string, { impressions: number; clicks: number }>();
 
-  for (const group of groups) {
-    const label = (group.ctaId && names.get(group.ctaId)) || "Deleted CTA";
+  for (const group of groups.filter((row) => row.bucket === "campaign")) {
+    const label = names.get(group.label) || "Deleted campaign";
     const current = map.get(label) ?? { impressions: 0, clicks: 0 };
-    if (group.type === "click") current.clicks = group._count;
-    if (group.type === "impression") current.impressions = group._count;
+    if (group.type === "click") current.clicks = Number(group.count);
+    if (group.type === "impression") current.impressions = Number(group.count);
     map.set(label, current);
   }
 
@@ -355,7 +368,7 @@ function summarizeCtaGroups(
     .slice(0, 5);
 }
 
-function buildTrend(events: Array<{ type: string; createdAt: Date }>) {
+function buildTrend(events: TrendRow[]) {
   const days = Array.from({ length: 14 }, (_, index) => {
     const date = new Date();
     date.setDate(date.getDate() - (13 - index));
@@ -370,11 +383,11 @@ function buildTrend(events: Array<{ type: string; createdAt: Date }>) {
   const map = new Map(days.map((day) => [day.key, day]));
 
   for (const event of events) {
-    const key = event.createdAt.toISOString().slice(0, 10);
+    const key = event.day.toISOString().slice(0, 10);
     const day = map.get(key);
     if (!day) continue;
-    if (event.type === "click") day.clicks += 1;
-    if (event.type === "impression") day.impressions += 1;
+    if (event.type === "click") day.clicks += Number(event.count);
+    if (event.type === "impression") day.impressions += Number(event.count);
   }
 
   return days;

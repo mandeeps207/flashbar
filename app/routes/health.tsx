@@ -1,6 +1,7 @@
 import prisma from "../db.server";
 
 export const loader = async () => {
+  const startedAt = performance.now();
   const env = {
     DATABASE_URL: Boolean(process.env.DATABASE_URL),
     SCOPES: Boolean(process.env.SCOPES),
@@ -10,8 +11,11 @@ export const loader = async () => {
   };
 
   let database = true;
+  let databaseMs = 0;
   try {
+    const databaseStartedAt = performance.now();
     await prisma.session.count();
+    databaseMs = Math.round(performance.now() - databaseStartedAt);
   } catch {
     database = false;
   }
@@ -19,6 +23,8 @@ export const loader = async () => {
   return Response.json({
     ok: database && Object.values(env).every(Boolean),
     database,
+    databaseMs,
     env,
+    totalMs: Math.round(performance.now() - startedAt),
   });
 };

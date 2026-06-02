@@ -25,29 +25,49 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import prisma from "../db.server";
 import { authenticate } from "../shopify.server";
 
+type CampaignMetricRow = {
+  ctaId: string;
+  type: string;
+  count: bigint;
+};
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   const navSearch = navigationSearch(request, session.shop);
   const ctas = await prisma.announcementCta.findMany({
     where: { shop: session.shop },
     orderBy: [{ isEnabled: "desc" }, { priority: "asc" }, { createdAt: "desc" }],
+    select: {
+      id: true,
+      name: true,
+      text: true,
+      buttonText: true,
+      buttonUrl: true,
+      isEnabled: true,
+      isEvergreen: true,
+      priority: true,
+      updatedAt: true,
+    },
+    take: 100,
   });
 
-  const events = await prisma.ctaEvent.groupBy({
-    by: ["ctaId", "type"],
-    where: {
-      shop: session.shop,
-      ctaId: { in: ctas.map((cta) => cta.id) },
-    },
-    _count: true,
-  });
+  const events =
+    ctas.length === 0
+      ? []
+      : await prisma.$queryRaw<CampaignMetricRow[]>`
+          SELECT "ctaId", "type", COUNT(*) AS count
+          FROM "CtaEvent"
+          WHERE "shop" = ${session.shop}
+          AND "ctaId" = ANY(${ctas.map((cta) => cta.id)})
+          GROUP BY "ctaId", "type"
+        `;
 
   const metrics = new Map<string, { impressions: number; clicks: number }>();
   for (const event of events) {
     if (!event.ctaId) continue;
     const current = metrics.get(event.ctaId) ?? { impressions: 0, clicks: 0 };
-    if (event.type === "impression") current.impressions = event._count;
-    if (event.type === "click") current.clicks = event._count;
+    if (event.type === "impression") current.impressions = Number(event.count);
+    if (event.type === "click") current.clicks = Number(event.count);
     metrics.set(event.ctaId, current);
   }
 
@@ -94,8 +114,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function Ctas() {
-  const { ctas } = useLoaderData<typeof loader>();
-  const { navSearch } = useLoaderData<typeof loader>();
+  const { ctas, navSearch } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const deleteFetcher = useFetcher<typeof action>();
   const [campaignToDelete, setCampaignToDelete] = useState<null | {
